@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quran Video Studio Pro</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Premium Fonts for Arabic and Interface -->
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Aref+Ruqaa:wght@400;700&family=Cairo:wght@400;700&family=Scheherazade+New:wght@400;700&family=Noto+Naskh+Arabic:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #020617; color: white; }
+        .range-slider::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #10b981; margin-top: -6px; cursor: pointer; }
+        .range-slider::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #334155; border-radius: 2px; }
+        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback } = React;
+
+        // --- Constants ---
+        const CANVAS_WIDTH = 1080;
+        const CANVAS_HEIGHT = 1920; // 9:16 Aspect Ratio (Shorts/TikTok)
+        
+        const RECITERS = [
+            { id: 'ar.alafasy', name: 'Mishary Rashid Alafasy' },
+            { id: 'ar.abdulbasitmurattal', name: 'Abdul Basit (Murattal)' },
+            { id: 'ar.hudhaify', name: 'Al Hudhaify' },
+            { id: 'ar.husary', name: 'Al-Husary' }
+        ];
+
+        const FONTS = [
+            { name: "Amiri (Classic)", value: "'Amiri', serif" },
+            { name: "Scheherazade (Elegant)", value: "'Scheherazade New', serif" },
+            { name: "Aref Ruqaa (Calligraphy)", value: "'Aref Ruqaa', serif" },
+            { name: "Noto Naskh (Readable)", value: "'Noto Naskh Arabic', serif" }
+        ];
+
+        // --- Helper: Word Wrap for Canvas ---
+        function getLines(ctx, text, maxWidth) {
+            const words = text.split(" ");
+            const lines = [];
+            let currentLine = words[0];
+
+            for (let i = 1; i < words.length; i++) {
+                const word = words[i];
+                const width = ctx.measureText(currentLine + " " + word).width;
+                if (width < maxWidth) {
+                    currentLine += " " + word;
+                } else {
+                    lines.push(currentLine);
+                    currentLine = word;
+                }
+            }
+            lines.push(currentLine);
+            return lines;
+        }
+
+        function App() {
+            // --- State: App Status ---
+            const [isActivated, setIsActivated] = useState(false); // New activation gate
+            const [statusMsg, setStatusMsg] = useState('Click "Start Studio" to unlock audio playback.');
+            const [error, setError] = useState(null); 
+
+            // --- State: Data ---
+            const [surahs, setSurahs] = useState([]);
+            const [selectedSurah, setSelectedSurah] = useState(1);
+            const [ayahs, setAyahs] = useState([]);
+            const [reciter, setReciter] = useState(RECITERS[0].id);
+            const [isLoading, setIsLoading] = useState(false);
+            
+            // --- State: Playback & Recording ---
+            const [currentAyahIndex, setCurrentAyahIndex] = useState(0);
+            const [isPlaying, setIsPlaying] = useState(false);
+            const [isRecording, setIsRecording] = useState(false);
+            
+            // --- State: Design ---
+            const [bgType, setBgType] = useState('image');
+            const [bgSource, setBgSource] = useState('https://images.unsplash.com/photo-1534447677768-be436bb09401?ixlib=rb-4.0.3&auto=format&fit=crop&w=1080&q=80');
+            const [logoSource, setLogoSource] = useState(null);
+            const [brandName, setBrandName] = useState('@MyQuranChannel');
+            
+            // --- State: Styling ---
+            const [arabicFont, setArabicFont] = useState(FONTS[0].value);
+            const [fontSize, setFontSize] = useState(65);
+            const [textColor, setTextColor] = useState('#ffffff');
+            const [transColor, setTransColor] = useState('#e2e8f0');
+            const [bgOpacity, setBgOpacity] = useState(0.5);
+            const [showTranslation, setShowTranslation] = useState(true);
+
+            // --- Refs ---
+            const canvasRef = useRef(null);
+            const videoBgRef = useRef(null);
+            const audioRef = useRef(new Audio()); 
+            const mediaRecorderRef = useRef(null);
+            const chunksRef = useRef([]);
+            const animationRef = useRef(null);
+            const audioContextRef = useRef(null);
+            const destNodeRef = useRef(null);
+
+            // --- 0. Activation Handler ---
+            const activateStudio = async () => {
+                if (isActivated) return;
+
+                // 1. Initialize Audio Context on user click
+                try {
+                    const Ac = window.AudioContext || window.webkitAudioContext;
+                    audioContextRef.current = new Ac();
+                    await audioContextRef.current.resume(); // Ensure context is running
+                    
+                    // 2. Setup Audio Routing for recording
+                    const audio = audioRef.current;
+                    audio.crossOrigin = "anonymous";
+                    const source = audioContextRef.current.createMediaElementSource(audio);
+                    destNodeRef.current = audioContextRef.current.createMediaStreamDestination();
+                    
+                    // Route audio to destination (for recording) and speakers (for user preview)
+                    source.connect(destNodeRef.current);
+                    source.connect(audioContextRef.current.destination);
+                    
+                    setIsActivated(true);
+                    setStatusMsg('Studio Activated. Loading Surahs...');
+
+                } catch (e) {
+                    setError('Failed to initialize Audio/Recording system. Try refreshing the page.');
+                    console.error('Activation Error:', e);
+                }
+            };
+            
+
+            // --- 1. Load Surah List (Runs once after activation) ---
+            useEffect(() => {
+                if (!isActivated) return;
+                fetch('https://api.alquran.cloud/v1/surah')
+                    .then(res => res.json())
+                    .then(data => setSurahs(data.data))
+                    .catch(() => setError('Failed to load Surah list.'))
+            }, [isActivated]);
+
+            // --- 2. Load Ayahs & Audio URLs ---
+            useEffect(() => {
+                if (!isActivated) return;
+
+                const loadData = async () => {
+                    setIsLoading(true);
+                    setError(null);
+                    setStatusMsg('Fetching Verses & Audio...');
+                    try {
+                        const [resText, resTrans, resAudio] = await Promise.all([
+                            fetch(`https://api.alquran.cloud/v1/surah/${selectedSurah}`),
+                            fetch(`https://api.alquran.cloud/v1/surah/${selectedSurah}/en.sahih`),
+                            fetch(`https://api.alquran.cloud/v1/surah/${selectedSurah}/${reciter}`)
+                        ]);
+
+                        const dText = await resText.json();
+                        const dTrans = await resTrans.json();
+                        const dAudio = await resAudio.json();
+
+                        const merged = dText.data.ayahs.map((ayah, i) => ({
+                            number: ayah.numberInSurah,
+                            text: ayah.text,
+                            trans: dTrans.data.ayahs[i].text,
+                            audio: dAudio.data.ayahs[i].audio
+                        }));
+
+                        setAyahs(merged);
+                        setCurrentAyahIndex(0);
+                        setStatusMsg('Ready to Record');
+                    } catch (e) {
+                        console.error("Data Fetch Error:", e);
+                        setStatusMsg('Error loading data.');
+                        setError('Failed to fetch Quran data. Check console.');
+                    } finally {
+                        setIsLoading(false);
+                    }
+                };
+                loadData();
+            }, [selectedSurah, reciter, isActivated]);
+
+            // --- 3. Audio Handling (The Sync Engine) ---
+            const stopRecording = useCallback(() => {
+                if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+                    mediaRecorderRef.current.stop();
+                }
+                setIsRecording(false);
+            }, []);
+
+            useEffect(() => {
+                const audio = audioRef.current;
+                
+                const handleEnded = () => {
+                    if (currentAyahIndex < ayahs.length - 1) {
+                        setCurrentAyahIndex(prev => prev + 1);
+                    } else {
+                        // End of Surah, stop playback and recording
+                        setIsPlaying(false);
+                        if (isRecording) {
+                            stopRecording();
+                        } else {
+                            setCurrentAyahIndex(0);
+                        }
+                    }
+                };
+
+                audio.addEventListener('ended', handleEnded);
+                return () => audio.removeEventListener('ended', handleEnded);
+            }, [ayahs, currentAyahIndex, isRecording, stopRecording]);
+
+            // Play specific ayah when index changes if playing
+            useEffect(() => {
+                if (isPlaying && ayahs[currentAyahIndex] && audioContextRef.current) {
+                    const audio = audioRef.current;
+                    audio.src = ayahs[currentAyahIndex].audio;
+                    // Play is now allowed because audio context is running
+                    audio.play().catch(e => {
+                        console.error("Audio Playback Error:", e);
+                        setError('Audio playback failed. Please check your browser console.');
+                        setIsPlaying(false);
+                    });
+                }
+            }, [currentAyahIndex, isPlaying, ayahs]);
+
+            // --- 4. The Canvas Render Loop (Visuals) ---
+            const draw = () => {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                
+                // A. Background & Overlay
+                if (bgType === 'image') {
+                    const img = new Image();
+                    img.src = bgSource;
+                    if (img.complete) {
+                        const scale = Math.max(CANVAS_WIDTH / img.width, CANVAS_HEIGHT / img.height);
+                        const x = (CANVAS_WIDTH / 2) - (img.width / 2) * scale;
+                        const y = (CANVAS_HEIGHT / 2) - (img.height / 2) * scale;
+                        ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+                    }
+                } else if (bgType === 'video' && videoBgRef.current) {
+                    const vid = videoBgRef.current;
+                    if (vid.readyState >= 2) {
+                        const scale = Math.max(CANVAS_WIDTH / vid.videoWidth, CANVAS_HEIGHT / vid.videoHeight);
+                        const x = (CANVAS_WIDTH / 2) - (vid.videoWidth / 2) * scale;
+                        const y = (CANVAS_HEIGHT / 2) - (vid.videoHeight / 2) * scale;
+                        ctx.drawImage(vid, x, y, vid.videoWidth * scale, vid.videoHeight * scale);
+                    }
+                }
+                ctx.fillStyle = `rgba(0, 0, 0, ${bgOpacity})`;
+                ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+
+                // B. Branding
+                if (logoSource) {
+                    const logo = new Image();
+                    logo.src = logoSource;
+                    if (logo.complete) {
+                        const size = 100;
+                        const padding = 60;
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.arc(padding + size/2, padding + size/2, size/2, 0, Math.PI * 2, true);
+                        ctx.closePath();
+                        ctx.clip();
+                        ctx.drawImage(logo, padding, padding, size, size);
+                        ctx.restore();
+                    }
+                }
+                if (brandName) {
+                    ctx.fillStyle = '#fff';
+                    ctx.font = "bold 32px 'Cairo'";
+                    ctx.textAlign = 'left';
+                    ctx.shadowColor = "rgba(0,0,0,0.8)";
+                    ctx.shadowBlur = 5;
+                    ctx.fillText(brandName, logoSource ? 180 : 60, 110);
+                    ctx.shadowBlur = 0; // Reset
+                }
+
+
+                // C. Content
+                if (ayahs.length > 0) {
+                    const ayah = ayahs[currentAyahIndex];
+
+                    // Arabic
+                    ctx.fillStyle = textColor;
+                    ctx.font = `${fontSize}px ${arabicFont.split(',')[0]}`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.shadowColor = "rgba(0,0,0,0.9)";
+                    ctx.shadowBlur = 15;
+                    
+                    const arLines = getLines(ctx, ayah.text, CANVAS_WIDTH - 120);
+                    const lineSpacing = fontSize * 1.8;
+                    const totalHeight = arLines.length * lineSpacing;
+                    let startY = CANVAS_HEIGHT / 2 - (totalHeight / 2);
+                    
+                    if (showTranslation) startY -= 100;
+
+                    arLines.forEach((line, i) => {
+                        ctx.fillText(line, CANVAS_WIDTH / 2, startY + (i * lineSpacing));
+                    });
+
+                    // Translation
+                    if (showTranslation) {
+                        ctx.fillStyle = transColor;
+                        ctx.font = `italic ${fontSize * 0.45}px 'Cairo'`;
+                        ctx.shadowBlur = 4;
+                        const transLines = getLines(ctx, ayah.trans, CANVAS_WIDTH - 160);
+                        const transLineSpacing = fontSize * 0.7;
+                        const transStartY = startY + totalHeight + 60;
+
+                        transLines.forEach((line, i) => {
+                            ctx.fillText(line, CANVAS_WIDTH / 2, transStartY + (i * transLineSpacing));
+                        });
+                    }
+
+                    // Footer Info
+                    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                    ctx.font = "28px 'Cairo'";
+                    ctx.shadowBlur = 0;
+                    ctx.fillText(`Surah ${surahs.find(s => s.number == selectedSurah)?.englishName || selectedSurah} • Ayah ${ayah.number}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT - 120);
+                }
+
+                animationRef.current = requestAnimationFrame(draw);
+            };
+
+            useEffect(() => {
+                // Draw function will only run if the component is mounted after activation
+                if (!isActivated) return;
+                animationRef.current = requestAnimationFrame(draw);
+                return () => cancelAnimationFrame(animationRef.current);
+            }, [bgSource, bgType, bgOpacity, ayahs, currentAyahIndex, isPlaying, fontSize, arabicFont, textColor, transColor, logoSource, brandName, showTranslation, isActivated]);
+
+
+            // --- 5. Recording Logic (Combining Video & Audio) ---
+            const startRecording = async () => {
+                if (!isActivated || isLoading || ayahs.length === 0) {
+                    setError('Please activate the studio and wait for data to load.');
+                    return;
+                }
+                
+                setError(null);
+                setStatusMsg('Setting up recorder...');
+                
+                // 1. Ensure Audio Context is active
+                if (audioContextRef.current.state === 'suspended') {
+                    await audioContextRef.current.resume();
+                }
+
+                // 2. Get Canvas Stream
+                const canvas = canvasRef.current;
+                let combinedStream;
+
+                try {
+                    const canvasStream = canvas.captureStream(30); // 30 FPS
+                    // The destNodeRef has the routed audio stream
+                    const audioStream = destNodeRef.current.stream;
+                    
+                    // 3. Combine Tracks
+                    combinedStream = new MediaStream([
+                        ...canvasStream.getVideoTracks(),
+                        ...audioStream.getAudioTracks()
+                    ]);
+                } catch (e) {
+                    setError('Failed to combine video and audio streams. This is often due to missing audio permissions.');
+                    console.error('Stream Combination Error:', e);
+                    return;
+                }
+                
+
+                // 4. Create Recorder (High Bitrate for quality)
+                let mimeType = 'video/webm;codecs=vp9';
+                if (!MediaRecorder.isTypeSupported(mimeType)) {
+                    mimeType = 'video/webm'; 
+                }
+
+                const recorder = new MediaRecorder(combinedStream, {
+                    mimeType: mimeType,
+                    videoBitsPerSecond: 5000000 // 5 Mbps (High Quality)
+                });
+
+                mediaRecorderRef.current = recorder;
+                chunksRef.current = [];
+
+                recorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) chunksRef.current.push(e.data);
+                };
+
+                // --- Download Logic on Stop ---
+                recorder.onstop = () => {
+                    if (chunksRef.current.length === 0) {
+                        setStatusMsg('Recording Failed.');
+                        setError('Video data was not captured. Check console for specific errors.');
+                        setIsRecording(false);
+                        return;
+                    }
+
+                    const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+                    const url = URL.createObjectURL(blob);
+                    
+                    // Trigger Download
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `Quran_Surah_${selectedSurah}_${Date.now()}.webm`;
+                    document.body.appendChild(a);
+                    a.click();
+                    
+                    // Cleanup
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    setIsRecording(false);
+                    setStatusMsg('Video Saved! Check your downloads folder.');
+                    setError(null);
+                };
+
+                // 5. Start Playback and Recording
+                try {
+                    setCurrentAyahIndex(0); // Reset index
+                    recorder.start();
+                    setIsRecording(true);
+                    
+                    if (ayahs[0]) {
+                        audioRef.current.src = ayahs[0].audio;
+                        await audioRef.current.play();
+                        setIsPlaying(true);
+                    }
+                    
+                    if (bgType === 'video' && videoBgRef.current) {
+                        videoBgRef.current.currentTime = 0;
+                        videoBgRef.current.play();
+                    }
+                    setStatusMsg('Recording in Progress...');
+                } catch (err) {
+                    console.error("Recording Start Error:", err);
+                    setIsRecording(false);
+                    setIsPlaying(false);
+                    setStatusMsg('Recording Failed.');
+                    setError('Could not start playback/recording. Check browser console.');
+                    return;
+                }
+            };
+
+            const togglePlay = () => {
+                if(!isActivated || isRecording || isLoading) return;
+                
+                setIsPlaying(prev => {
+                    if (prev) {
+                        audioRef.current.pause();
+                        if (bgType === 'video' && videoBgRef.current) videoBgRef.current.pause();
+                    } else {
+                        // Reset to start of surah for preview
+                        if(currentAyahIndex !== 0) setCurrentAyahIndex(0);
+                        
+                        if (bgType === 'video' && videoBgRef.current) videoBgRef.current.play();
+                    }
+                    return !prev;
+                });
+            };
+
+            // --- Handlers for File Uploads ---
+            const handleFile = (e, type) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const url = URL.createObjectURL(file);
+                if (type === 'bg') {
+                    setBgSource(url);
+                    setBgType(file.type.startsWith('video') ? 'video' : 'image');
+                    if (file.type.startsWith('video')) {
+                        setTimeout(() => {
+                            if (videoBgRef.current) {
+                                videoBgRef.current.src = url;
+                                videoBgRef.current.play();
+                                videoBgRef.current.loop = true;
+                                videoBgRef.current.muted = true;
+                            }
+                        }, 100);
+                    }
+                } else {
+                    setLogoSource(url);
+                }
+            };
+            
+            // --- UI Rendering ---
+
+            if (!isActivated) {
+                return (
+                    <div className="flex h-screen bg-slate-950 text-slate-100 items-center justify-center p-8">
+                        <div className="text-center p-10 rounded-xl glass-panel max-w-lg">
+                            <h2 className="text-2xl font-bold text-emerald-400 mb-4">Studio Activation Required</h2>
+                            <p className="text-slate-300 mb-6">
+                                To enable audio playback, synchronization, and video recording, browsers require an explicit click. Please click the button below to activate the necessary systems.
+                            </p>
+                            <button 
+                                onClick={activateStudio}
+                                className="bg-emerald-600 hover:bg-emerald-500 text-white py-3 px-8 rounded-lg font-bold text-lg transition flex items-center justify-center mx-auto gap-2 shadow-lg hover:shadow-emerald-500/50"
+                            >
+                                <lucide-headphones size={20}/> Start Quran Video Studio
+                            </button>
+                            {error && (
+                                <div className="mt-4 p-2 bg-red-800 border border-red-600 rounded text-sm text-red-100 flex items-center gap-2">
+                                    <lucide-alert-triangle size={16}/> {error}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+            }
+
+
+            return (
+                <div className="flex h-screen bg-slate-950 text-slate-100 overflow-hidden font-sans">
+                    
+                    {/* --- Sidebar (Tools) --- */}
+                    <div className="w-96 flex flex-col border-r border-slate-800 bg-slate-900 z-20 shadow-2xl">
+                        <div className="p-4 border-b border-slate-800 bg-slate-900">
+                            <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-400 to-teal-500 bg-clip-text text-transparent">
+                                Quran Video Pro Studio
+                            </h1>
+                            <p className="text-xs text-slate-500 mt-1">{statusMsg}</p>
+                            {error && (
+                                <div className="mt-2 p-2 bg-red-800 border border-red-600 rounded text-sm text-red-100 flex items-center gap-2">
+                                    <lucide-alert-triangle size={16}/> {error}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
+                            
+                            {/* 1. Content & Audio */}
+                            <div className="glass-panel p-3 rounded-lg">
+                                <h3 className="text-xs font-bold text-emerald-400 uppercase mb-3 flex items-center gap-2">
+                                    <lucide-book-open size={14}/> Content & Recitation
+                                </h3>
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="text-xs text-slate-400">Select Surah</label>
+                                        <select 
+                                            className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-sm mt-1 focus:border-emerald-500 outline-none"
+                                            value={selectedSurah}
+                                            onChange={(e) => setSelectedSurah(e.target.value)}
+                                            disabled={isLoading}
+                                        >
+                                            {surahs.map(s => (
+                                                <option key={s.number} value={s.number}>{s.number}. {s.englishName} ({s.name})</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-400">Reciter Voice</label>
+                                        <select 
+                                            className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-sm mt-1 focus:border-emerald-500 outline-none"
+                                            value={reciter}
+                                            onChange={(e) => setReciter(e.target.value)}
+                                            disabled={isLoading}
+                                        >
+                                            {RECITERS.map(r => (
+                                                <option key={r.id} value={r.id}>{r.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <input type="checkbox" checked={showTranslation} onChange={e => setShowTranslation(e.target.checked)} id="showTrans" className="accent-emerald-500"/>
+                                        <label htmlFor="showTrans" className="text-sm cursor-pointer">Show English Translation</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 2. Appearance */}
+                            <div className="glass-panel p-3 rounded-lg">
+                                <h3 className="text-xs font-bold text-blue-400 uppercase mb-3 flex items-center gap-2">
+                                    <lucide-palette size={14}/> Appearance
+                                </h3>
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="text-xs text-slate-400">Arabic Font Style</label>
+                                        <select 
+                                            className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-sm mt-1"
+                                            value={arabicFont}
+                                            onChange={(e) => setArabicFont(e.target.value)}
+                                        >
+                                            {FONTS.map(f => <option key={f.value} value={f.value}>{f.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-400 flex justify-between">
+                                            <span>Text Size</span>
+                                            <span>{fontSize}px</span>
+                                        </label>
+                                        <input type="range" min="40" max="100" value={fontSize} onChange={e => setFontSize(parseInt(e.target.value))} className="range-slider mt-1"/>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label className="text-xs text-slate-400">Text Color</label>
+                                            <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="w-full h-8 bg-transparent mt-1 cursor-pointer"/>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-slate-400">Translation Color</label>
+                                            <input type="color" value={transColor} onChange={e => setTransColor(e.target.value)} className="w-full h-8 bg-transparent mt-1 cursor-pointer"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 3. Assets & Branding */}
+                            <div className="glass-panel p-3 rounded-lg">
+                                <h3 className="text-xs font-bold text-amber-400 uppercase mb-3 flex items-center gap-2">
+                                    <lucide-image size={14}/> Assets & Branding
+                                </h3>
+                                <div className="space-y-3">
+                                    <input type="text" placeholder="Channel Name" value={brandName} onChange={e => setBrandName(e.target.value)} className="w-full bg-slate-800 border-slate-700 rounded p-2 text-sm"/>
+                                    
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <label className="cursor-pointer bg-slate-800 hover:bg-slate-700 p-2 rounded text-center text-xs transition border border-dashed border-slate-600">
+                                            <span>Upload Logo</span>
+                                            <input type="file" accept="image/*" className="hidden" onChange={e => handleFile(e, 'logo')}/>
+                                        </label>
+                                        <label className="cursor-pointer bg-slate-800 hover:bg-slate-700 p-2 rounded text-center text-xs transition border border-dashed border-slate-600">
+                                            <span>Change BG (Img/Vid)</span>
+                                            <input type="file" accept="image/*,video/*" className="hidden" onChange={e => handleFile(e, 'bg')}/>
+                                        </label>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-400">Background Dimming</label>
+                                        <input type="range" min="0" max="1" step="0.1" value={bgOpacity} onChange={e => setBgOpacity(parseFloat(e.target.value))} className="range-slider mt-1"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer Actions */}
+                        <div className="p-4 bg-slate-900 border-t border-slate-800">
+                            {isLoading && <div className="text-xs text-center text-emerald-500 mb-2 animate-pulse">Loading...</div>}
+                            
+                            <div className="flex gap-3">
+                                <button 
+                                    onClick={togglePlay}
+                                    disabled={isLoading || isRecording || ayahs.length === 0}
+                                    className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50"
+                                >
+                                    {isPlaying ? <lucide-pause size={18}/> : <lucide-play size={18}/>}
+                                    {isPlaying ? "Pause Preview" : "Preview"}
+                                </button>
+                                
+                                <button 
+                                    onClick={isRecording ? stopRecording : startRecording}
+                                    disabled={isLoading || ayahs.length === 0}
+                                    className={`flex-1 py-3 rounded-lg font-bold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50 ${isRecording ? 'bg-red-500 hover:bg-red-600 animate-pulse' : 'bg-emerald-600 hover:bg-emerald-500'}`}
+                                >
+                                    {isRecording ? <lucide-square size={18}/> : <lucide-video size={18}/>}
+                                    {isRecording ? "Stop & Save" : "Make Video"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* --- Preview Area --- */}
+                    <div className="flex-1 bg-black flex flex-col items-center justify-center relative p-8">
+                        <div className="relative shadow-2xl rounded-xl overflow-hidden border border-slate-800" style={{ height: '90vh', aspectRatio: '9/16' }}>
+                            <canvas ref={canvasRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="w-full h-full object-contain bg-slate-900" />
+                            
+                            {/* Hidden Media Elements */}
+                            <video ref={videoBgRef} className="hidden" crossOrigin="anonymous" playsInline muted loop />
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+
