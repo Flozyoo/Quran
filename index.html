@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Math Hub Pro - Administration</title>
+    <title>Math Hub Pro - Yahya Tech</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- PDF Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <script>
@@ -19,21 +18,501 @@
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
     <style>
-        .paper-outer { background-color: #1f2937; min-height: 100vh; padding: 40px 20px; }
+        .paper-outer { background-color: #111827; min-height: 100vh; padding: 40px 20px; transition: padding 0.3s ease; }
         .paper { 
             background-color: white; 
             width: 210mm; 
             min-height: 297mm; 
             margin: 0 auto; 
             padding: 20mm; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5); 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5); 
             position: relative;
         }
         @media (max-width: 210mm) {
             .paper { width: 100%; min-height: auto; padding: 15px; }
             .paper-outer { padding: 10px; }
         }
-        .formula-btn {
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background-color: #3b82f6; border-radius: 10px; }
+        #announcement-bar { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); transform: translateY(-100%); opacity: 0; }
+        #announcement-bar.visible { transform: translateY(0); opacity: 1; }
+
+        /* Yahya Tech Loading Styles */
+        .brand-glow {
+            text-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+            letter-spacing: 0.15em;
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-up { animation: fadeUp 0.8s ease-out forwards; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans">
+
+    <!-- GLOBAL ANNOUNCEMENT BAR -->
+    <div id="announcement-bar" class="fixed top-0 left-0 w-full z-[80] py-3 px-6 flex justify-center items-center gap-3 shadow-lg font-bold text-sm sm:text-base">
+        <i class="fas fa-bullhorn animate-bounce"></i>
+        <span id="announcement-text">Chargement des annonces...</span>
+    </div>
+
+    <!-- Loading Screen (Yahya Tech Branding) -->
+    <div id="loader" class="fixed inset-0 bg-gray-950 z-[100] flex items-center justify-center">
+        <div class="flex flex-col items-center">
+            <!-- Big Central Brand -->
+            <div class="mb-12 text-center animate-fade-up">
+                <h1 class="text-5xl md:text-7xl font-black text-white brand-glow uppercase italic">Yahya Tech</h1>
+                <div class="h-1 w-24 bg-blue-600 mx-auto mt-4 rounded-full"></div>
+            </div>
+            
+            <!-- Lower Loading Spinner -->
+            <div class="flex flex-col items-center gap-4">
+                <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+                <p class="text-blue-500 font-bold tracking-[0.3em] uppercase text-[10px] animate-pulse">Liaison Sécurisée</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main View -->
+    <div id="main-content" class="paper-outer pt-4">
+        <div id="exam-render" class="paper text-gray-900 hidden" ondblclick="triggerAuth()"></div>
+        
+        <div id="empty-state" class="text-center py-20 hidden" ondblclick="triggerAuth()">
+            <i class="fas fa-file-circle-exclamation text-6xl text-gray-800 mb-4"></i>
+            <p class="text-gray-500 italic">Prêt pour votre première épreuve ? Double-cliquez ici.</p>
+        </div>
+    </div>
+
+    <!-- Floating UI -->
+    <div class="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3 no-print">
+        <div id="fab-menu" class="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl p-4 w-72 transform scale-0 origin-bottom-right transition-all duration-300 mb-2">
+            <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
+                <div class="flex flex-col">
+                    <h3 class="font-bold text-blue-400">Hub Documentaire</h3>
+                    <span class="text-[8px] text-gray-500 uppercase tracking-widest">Powered by Yahya Tech</span>
+                </div>
+                <button onclick="downloadPDF()" class="text-gray-400 hover:text-green-400"><i class="fas fa-file-pdf"></i></button>
+            </div>
+            <div id="subject-list" class="max-h-80 overflow-y-auto custom-scroll space-y-2"></div>
+            <div id="admin-controls" class="hidden mt-4 pt-4 border-t border-gray-700 flex flex-col gap-2">
+                <button class="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2" onclick="openEditor()">
+                    <i class="fas fa-plus-circle"></i> Nouveau Sujet
+                </button>
+            </div>
+        </div>
+        <button onclick="toggleMenu()" class="bg-white text-gray-900 w-16 h-16 rounded-full shadow-2xl flex items-center justify-center text-2xl transition-transform hover:scale-110">
+            <i class="fas fa-layer-group" id="fab-icon"></i>
+        </button>
+    </div>
+
+    <!-- Secret Auth -->
+    <div id="auth-modal" class="fixed inset-0 bg-black/95 z-[110] hidden flex items-center justify-center">
+        <div class="w-full max-w-xs text-center">
+            <div class="mb-8">
+                <h2 class="text-white font-black italic tracking-widest uppercase">Yahya Tech Admin</h2>
+            </div>
+            <input type="password" id="admin-pin" class="bg-transparent border-b-2 border-gray-700 text-white text-5xl text-center w-full outline-none focus:border-blue-500 transition-all py-4 tracking-[0.5em]" placeholder="******">
+            <div class="mt-8 flex gap-4">
+                <button onclick="closeModals()" class="flex-1 text-gray-500 font-bold">Retour</button>
+                <button onclick="verifyPin()" class="flex-1 bg-blue-600 py-3 rounded-xl font-bold">Connexion</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Master Dashboard -->
+    <div id="editor-modal" class="fixed inset-0 bg-gray-900 z-[120] hidden flex flex-col">
+        <div class="p-4 border-b border-gray-800 flex justify-between items-center bg-gray-900">
+            <div class="flex items-center gap-4">
+                <div class="bg-blue-600 px-3 py-1 rounded text-xs font-bold uppercase tracking-widest">Yahya Tech Dash</div>
+                <h2 id="editor-status" class="text-sm text-gray-400">Configuration</h2>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="deleteCurrent()" id="btn-delete" class="text-red-500 hidden px-2"><i class="fas fa-trash-can"></i></button>
+                <button onclick="closeModals()" class="bg-gray-800 text-white px-6 py-2 rounded-xl text-sm font-bold">Quitter</button>
+            </div>
+        </div>
+
+        <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
+            <!-- Left: Settings -->
+            <div class="w-full md:w-1/2 p-6 flex flex-col gap-6 overflow-y-auto custom-scroll border-r border-gray-800 bg-gray-900">
+                
+                <!-- Announcement Section -->
+                <div class="bg-gray-800/50 p-4 rounded-2xl border border-gray-700">
+                    <label class="text-[10px] uppercase text-blue-400 font-bold mb-3 block tracking-widest">📢 Système d'annonce globale</label>
+                    <div class="flex flex-col gap-3">
+                        <textarea id="announce-input" class="bg-gray-950 border-0 p-3 rounded-xl text-sm h-16" placeholder="Message à afficher pour tous..."></textarea>
+                        <div class="flex gap-2">
+                            <select id="announce-type" class="bg-gray-950 border-0 text-xs rounded-lg px-3">
+                                <option value="bg-blue-600">Info (Bleu)</option>
+                                <option value="bg-red-600">Urgent (Rouge)</option>
+                                <option value="bg-green-600">Succès (Vert)</option>
+                            </select>
+                            <button onclick="updateAnnouncement(true)" class="flex-1 bg-blue-600 py-2 rounded-lg text-xs font-bold">Activer</button>
+                            <button onclick="updateAnnouncement(false)" class="bg-gray-700 px-4 rounded-lg text-xs">OFF</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Titre</label>
+                        <input type="text" id="edit-title" class="w-full bg-gray-800 border-0 p-3 rounded-xl text-sm">
+                    </div>
+                    <div>
+                        <label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Niveau</label>
+                        <select id="edit-level" class="w-full bg-gray-800 border-0 p-3 rounded-xl text-sm">
+                            <option value="Tronc Commun">Tronc Commun</option>
+                            <option value="1ère Bac">1ère Bac</option>
+                            <option value="2ème Bac">2ème Bac</option>
+                            <option value="3ème Année Collège">3ème Année Collège</option>
+                            <option value="6ème Grade">6ème Grade</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Professeur</label>
+                        <input type="text" id="edit-prof" class="w-full bg-gray-800 border-0 p-3 rounded-xl text-sm">
+                    </div>
+                    <div>
+                        <label class="text-[10px] uppercase text-gray-500 font-bold mb-1 block">Durée</label>
+                        <input type="text" id="edit-time" class="w-full bg-gray-800 border-0 p-3 rounded-xl text-sm">
+                    </div>
+                </div>
+
+                <div class="flex flex-col flex-1 min-h-[300px]">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-[10px] uppercase text-gray-500 font-bold">Éditeur Mathématique</label>
+                        <div class="flex gap-1 flex-wrap justify-end" id="toolbar"></div>
+                    </div>
+                    <textarea id="edit-content" class="flex-1 bg-gray-950 border border-gray-800 p-6 font-mono text-sm rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-blue-50 resize-none"></textarea>
+                </div>
+            </div>
+
+            <!-- Right: Preview -->
+            <div class="hidden md:block w-1/2 p-8 bg-gray-950 overflow-y-auto custom-scroll">
+                <div id="live-preview" class="paper text-gray-900 scale-[0.85] origin-top"></div>
+            </div>
+        </div>
+
+        <div class="p-4 bg-gray-900 border-t border-gray-800 flex justify-end">
+            <button onclick="saveExam()" class="bg-blue-600 hover:bg-blue-700 text-white px-12 py-4 rounded-2xl font-bold shadow-2xl transition-all transform hover:-translate-y-1">PUBLIER MAINTENANT</button>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 px-8 py-4 rounded-2xl bg-white text-gray-900 font-black shadow-2xl opacity-0 transition-all z-[200] border-t-4 border-blue-600"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, getDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCWUIfZWinb7m5-gDaDjDsjgezxMFCkjzs",
+            authDomain: "math-hub-832fb.firebaseapp.com",
+            projectId: "math-hub-832fb",
+            storageBucket: "math-hub-832fb.firebasestorage.app",
+            messagingSenderId: "201853249740",
+            appId: "1:201853249740:web:f0ce27947e83687020ba69",
+            measurementId: "G-MEBTLZPD1P"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'math-hub-master-v1';
+
+        let exams = [];
+        let currentId = null;
+        let isTeacher = false;
+        let user = null;
+
+        const tools = [
+            { label: 'Exo', code: '<div class="mb-10">\n<h3 class="font-bold border-b-2 border-black mb-3 flex justify-between uppercase">\n<span>Exercice 1</span> <span>(0 pts)</span>\n</h3>\nQuestion ici...\n</div>' },
+            { label: 'Frac', code: '$\\frac{num}{den}$' },
+            { label: 'Racine', code: '$\\sqrt{x}$' },
+            { label: 'Puissance', code: '$x^{n}$' },
+            { label: 'Vecteur', code: '$\\vec{AB}$' },
+            { label: 'Ensemble', code: '$\\mathbb{R}$' },
+            { label: 'Équation', code: '$$ x = \\frac{-b \\pm \\sqrt{\\Delta}}{2a} $$' }
+        ];
+
+        async function init() {
+            const tb = document.getElementById('toolbar');
+            tools.forEach(t => {
+                const b = document.createElement('button');
+                b.className = 'bg-gray-800 hover:bg-blue-600 text-[10px] px-2 py-1.5 rounded text-white transition-all font-bold';
+                b.innerText = t.label;
+                b.onclick = () => insertAtCursor(t.code);
+                tb.appendChild(b);
+            });
+
+            try {
+                await signInAnonymously(auth);
+                onAuthStateChanged(auth, (u) => {
+                    user = u;
+                    if (user) startSync();
+                });
+            } catch (e) { showToast("Erreur de connexion Cloud", true); }
+        }
+
+        function startSync() {
+            const qExams = query(collection(db, 'artifacts', appId, 'public', 'data', 'exams'), orderBy('createdAt', 'desc'));
+            onSnapshot(qExams, (snap) => {
+                exams = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderMenu();
+                if (exams.length > 0) {
+                    document.getElementById('empty-state').classList.add('hidden');
+                    document.getElementById('exam-render').classList.remove('hidden');
+                    if (!currentId) renderExam(exams[0].id);
+                } else {
+                    document.getElementById('empty-state').classList.remove('hidden');
+                    document.getElementById('exam-render').classList.add('hidden');
+                }
+                
+                // Keep loader visible for at least 1.5s for branding effect
+                setTimeout(() => {
+                    document.getElementById('loader').classList.add('hidden');
+                }, 1500);
+            });
+
+            onSnapshot(doc(db, 'artifacts', appId, 'public', 'settings', 'announcement'), (snap) => {
+                const bar = document.getElementById('announcement-bar');
+                const main = document.getElementById('main-content');
+                if (snap.exists() && snap.data().active) {
+                    const data = snap.data();
+                    document.getElementById('announcement-text').innerText = data.text;
+                    bar.className = `fixed top-0 left-0 w-full z-[80] py-3 px-6 flex justify-center items-center gap-3 shadow-lg font-bold text-sm sm:text-base visible ${data.type}`;
+                    main.style.paddingTop = "60px";
+                } else {
+                    bar.classList.remove('visible');
+                    main.style.paddingTop = "10px";
+                }
+            });
+        }
+
+        window.renderExam = (id) => {
+            currentId = id;
+            const ex = exams.find(e => e.id === id);
+            if (!ex) return;
+
+            document.getElementById('exam-render').innerHTML = `
+                <div class="border-4 border-black p-6 mb-12">
+                    <div class="flex justify-between items-start border-b-2 border-black pb-4 mb-4">
+                        <div class="text-left w-1/3">
+                            <p class="font-black text-xl uppercase leading-tight">${ex.level}</p>
+                            <p class="text-xs font-bold text-gray-500">Lycée Qualifiant Al Aaroui</p>
+                        </div>
+                        <div class="w-1/3 text-center">
+                            <div class="bg-black text-white px-4 py-2 inline-block">
+                                <h1 class="text-2xl font-black tracking-tighter">${ex.title}</h1>
+                            </div>
+                        </div>
+                        <div class="w-1/3 text-right">
+                            <p class="font-black text-lg">${ex.prof}</p>
+                            <p class="text-xs font-bold text-gray-500">Durée: ${ex.time}</p>
+                        </div>
+                    </div>
+                    <div class="flex justify-between text-[10px] font-black uppercase italic">
+                        <span>Session : 2024 / 2025</span>
+                        <span>Matière : Mathématiques</span>
+                    </div>
+                </div>
+                <div class="exam-body text-xl leading-relaxed">${ex.content}</div>
+                <div class="mt-24 pt-4 border-t border-gray-100 text-center text-gray-300 text-[10px] uppercase tracking-[0.3em] no-print">
+                    Yahya Tech Document Delivery System
+                </div>
+            `;
+            if (window.MathJax) window.MathJax.typesetPromise([document.getElementById('exam-render')]);
+            renderMenu();
+        };
+
+        window.renderMenu = () => {
+            const list = document.getElementById('subject-list');
+            list.innerHTML = '';
+            const groups = {};
+            exams.forEach(e => {
+                if (!groups[e.level]) groups[e.level] = [];
+                groups[e.level].push(e);
+            });
+
+            for (const level in groups) {
+                const h = document.createElement('div');
+                h.className = 'text-[9px] uppercase text-gray-600 font-black mt-4 mb-1 px-2 tracking-widest';
+                h.innerText = level;
+                list.appendChild(h);
+
+                groups[level].forEach(e => {
+                    const active = e.id === currentId;
+                    const row = document.createElement('div');
+                    row.className = `flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${active ? 'bg-blue-600 text-white font-bold shadow-lg shadow-blue-900/40' : 'hover:bg-gray-700/50 text-gray-400'}`;
+                    row.innerHTML = `
+                        <span class="truncate flex-1" onclick="renderExam('${e.id}')">${e.title}</span>
+                        ${isTeacher ? `<button onclick="openEditor('${e.id}')" class="ml-2 opacity-70 hover:opacity-100"><i class="fas fa-edit"></i></button>` : ''}
+                    `;
+                    list.appendChild(row);
+                });
+            }
+        };
+
+        window.updateAnnouncement = async (active) => {
+            if (!isTeacher) return;
+            const text = document.getElementById('announce-input').value;
+            const type = document.getElementById('announce-type').value;
+            try {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'settings', 'announcement'), {
+                    text, type, active, updatedAt: serverTimestamp()
+                });
+                showToast(active ? "Annonce publiée !" : "Annonce masquée");
+            } catch (e) { showToast("Erreur Cloud", true); }
+        };
+
+        window.triggerAuth = () => {
+            if (isTeacher) {
+                isTeacher = false;
+                document.getElementById('admin-controls').classList.add('hidden');
+                renderMenu();
+                showToast("Mode Lecture seule");
+            } else {
+                document.getElementById('auth-modal').classList.remove('hidden');
+                document.getElementById('admin-pin').focus();
+            }
+        };
+
+        window.verifyPin = () => {
+            if (document.getElementById('admin-pin').value === "800800") {
+                isTeacher = true;
+                document.getElementById('auth-modal').classList.add('hidden');
+                document.getElementById('admin-controls').classList.remove('hidden');
+                renderMenu();
+                showToast("Yahya Tech Hub: Accès Admin");
+                document.getElementById('admin-pin').value = '';
+            } else {
+                showToast("Accès Refusé", true);
+                document.getElementById('admin-pin').value = '';
+            }
+        };
+
+        window.openEditor = async (id = null) => {
+            currentId = id;
+            const ex = id ? exams.find(e => e.id === id) : { title: 'Contrôle N°', level: 'Tronc Commun', prof: 'Prof. Hamid', time: '2 Heures', content: '' };
+            
+            const annSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'settings', 'announcement'));
+            if (annSnap.exists()) {
+                document.getElementById('announce-input').value = annSnap.data().text;
+                document.getElementById('announce-type').value = annSnap.data().type;
+            }
+
+            document.getElementById('edit-title').value = ex.title;
+            document.getElementById('edit-level').value = ex.level;
+            document.getElementById('edit-prof').value = ex.prof;
+            document.getElementById('edit-time').value = ex.time;
+            document.getElementById('edit-content').value = ex.content;
+            document.getElementById('btn-delete').classList.toggle('hidden', !id);
+            document.getElementById('editor-modal').classList.remove('hidden');
+            livePreview();
+        };
+
+        function livePreview() {
+            const preview = document.getElementById('live-preview');
+            preview.innerHTML = `
+                <div class="border-2 border-black p-4 mb-4 text-[10px]">
+                    <div class="flex justify-between items-center border-b border-black pb-2 mb-2">
+                        <div class="font-bold">
+                            <p>${document.getElementById('edit-level').value}</p>
+                            <p>Lycée Al Aaroui</p>
+                        </div>
+                        <div class="bg-black text-white px-4 py-1 font-black">
+                            ${document.getElementById('edit-title').value}
+                        </div>
+                        <div class="text-right font-bold">
+                            <p>${document.getElementById('edit-prof').value}</p>
+                            <p>${document.getElementById('edit-time').value}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-xs">${document.getElementById('edit-content').value}</div>
+            `;
+            if (window.MathJax) window.MathJax.typesetPromise([preview]);
+        }
+        document.getElementById('edit-content').addEventListener('input', livePreview);
+
+        window.saveExam = async () => {
+            if (!isTeacher) return;
+            const data = {
+                title: document.getElementById('edit-title').value,
+                level: document.getElementById('edit-level').value,
+                prof: document.getElementById('edit-prof').value,
+                time: document.getElementById('edit-time').value,
+                content: document.getElementById('edit-content').value,
+                updatedAt: serverTimestamp()
+            };
+            try {
+                if (currentId && exams.find(e => e.id === currentId)) {
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'exams', currentId), data);
+                } else {
+                    data.createdAt = serverTimestamp();
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'exams'), data);
+                }
+                showToast("Synchronisation réussie");
+                closeModals();
+            } catch (e) { showToast("Erreur Écriture", true); }
+        };
+
+        window.deleteCurrent = async () => {
+            if (!currentId || !confirm("Supprimer ce document ?")) return;
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'exams', currentId));
+            showToast("Document supprimé");
+            closeModals();
+        };
+
+        window.downloadPDF = () => {
+            const el = document.getElementById('exam-render');
+            const ex = exams.find(e => e.id === currentId);
+            html2pdf().set({
+                margin: 0,
+                filename: `${ex.title}_${ex.level}.pdf`,
+                html2canvas: { scale: 3 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            }).from(el).save();
+        };
+
+        window.toggleMenu = () => {
+            const m = document.getElementById('fab-menu');
+            const i = document.getElementById('fab-icon');
+            const open = m.classList.contains('scale-100');
+            m.classList.toggle('scale-100', !open);
+            m.classList.toggle('scale-0', open);
+            i.className = open ? 'fas fa-layer-group' : 'fas fa-times';
+        };
+
+        window.closeModals = () => {
+            document.getElementById('auth-modal').classList.add('hidden');
+            document.getElementById('editor-modal').classList.add('hidden');
+        };
+
+        function insertAtCursor(text) {
+            const area = document.getElementById('edit-content');
+            const start = area.selectionStart;
+            area.value = area.value.substring(0, start) + text + area.value.substring(area.selectionEnd);
+            area.focus();
+            area.selectionStart = area.selectionEnd = start + text.length;
+            livePreview();
+        }
+
+        function showToast(m, err = false) {
+            const t = document.getElementById('toast');
+            t.innerText = m;
+            t.classList.toggle('border-red-600', err);
+            t.classList.toggle('border-blue-600', !err);
+            t.style.opacity = '1';
+            setTimeout(() => t.style.opacity = '0', 3000);
+        }
+
+        init();
+    </script>
+</body>
+</html>
+
             @apply bg-gray-700 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-mono transition-colors;
         }
         .custom-scroll::-webkit-scrollbar { width: 4px; }
