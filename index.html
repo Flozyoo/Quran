@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Math Hub Pro - Yahya Tech</title>
+    <title>Yahya Tech Academy | Portail Mathématique</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -18,22 +18,54 @@
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
     <style>
-        .paper-outer { background-color: #111827; min-height: 100vh; padding: 40px 20px; transition: padding 0.3s ease; }
-        .paper { 
+        :root { --brand-blue: #3b82f6; --sidebar-bg: #0f172a; }
+        body { background-color: #f1f5f9; color: #1e293b; font-family: 'Inter', sans-serif; }
+        
+        .sidebar { background-color: var(--sidebar-bg); transition: transform 0.3s ease; }
+        
+        .paper-canvas { 
             background-color: white; 
             width: 210mm; 
             min-height: 297mm; 
             margin: 0 auto; 
             padding: 20mm; 
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5); 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.06); 
+            border-radius: 2px;
             position: relative;
         }
-        @media (max-width: 210mm) {
-            .paper { width: 100%; min-height: auto; padding: 15px; }
-            .paper-outer { padding: 10px; }
+
+        @media (max-width: 1024px) {
+            .sidebar { position: fixed; transform: translateX(-100%); z-index: 50; height: 100vh; }
+            .sidebar.open { transform: translateX(0); }
+            .paper-canvas { width: 98%; padding: 10mm; margin: 10px auto; }
         }
-        .custom-scroll::-webkit-scrollbar { width: 4px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background-color: #3b82f6; border-radius: 10px; }
+
+        .nav-link { @apply flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:bg-white/5 hover:text-white transition-all cursor-pointer text-sm font-medium; }
+        .nav-link.active { @apply bg-blue-600 text-white shadow-lg shadow-blue-600/20; }
+        
+        #announcement-bar { transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform: translateY(-120%); }
+        #announcement-bar.visible { transform: translateY(0); }
+
+        .custom-scroll::-webkit-scrollbar { width: 5px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    </style>
+</head>
+<body class="overflow-hidden">
+
+    <!-- GLOBAL WARNING / ANNOUNCEMENT -->
+    <div id="announcement-bar" class="fixed top-0 left-0 w-full z-[70] py-4 px-8 flex justify-center items-center gap-4 shadow-2xl font-bold text-white">
+        <i class="fas fa-triangle-exclamation text-xl animate-pulse"></i>
+        <span id="announcement-text" class="text-sm md:text-base"></span>
+    </div>
+
+    <!-- YAHYA TECH LOADING -->
+    <div id="loader" class="fixed inset-0 bg-slate-950 z-[100] flex flex-col items-center justify-center">
+        <div class="animate-fade-in text-center">
+            <h1 class="text-6xl md:text-8xl font-black text-white italic tracking-tighter brand-glow">YAHYA TECH</h1>
+            <div class="h-1.5 w-32 bg-blue-600 mx-auto mt-4 rounded-full"></div>
+        </div>
+        <div class="mt-16 flex flex-col items-center gap-
+
         #announcement-bar { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); transform: translateY(-100%); opacity: 0; }
         #announcement-bar.visible { transform: translateY(0); opacity: 1; }
 
