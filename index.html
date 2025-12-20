@@ -3,753 +3,515 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contrôle Continu N°2 : Mathématiques</title>
+    <title>Hub de Contrôles : Mathématiques</title>
     
+    <!-- Tailwind CSS for rapid styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <!-- MathJax Configuration -->
     <script>
-    MathJax = {
+    window.MathJax = {
       tex: {
-        inlineMath: [['$', '$'], ['\\(', '\\)']]
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$']]
+      },
+      svg: {
+        fontCache: 'global'
       }
     };
     </script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
     <style>
-        /* Base Reset & Typography */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            background-color: #525659; /* Dark Grey Background for viewing */
-            font-family: "Times New Roman", Times, serif;
-            display: flex;
-            justify-content: center;
-            padding: 20px 0;
-            line-height: 1.5;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        /* A4 Page Simulation */
-        .page {
-            width: 210mm;
-            min-height: 297mm;
+        /* A4 Paper Simulation */
+        .paper {
             background-color: white;
-            padding: 20mm; /* Standard margins */
+            width: 100%;
+            max-width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 15mm;
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
             position: relative;
-            box-shadow: 0 0 15px rgba(0,0,0,0.5);
-            overflow: hidden; /* Ensures the triangle stays within bounds */
         }
 
-        /* 1. The Triangle Grading Box (Top Right Corner) */
-        .grading-triangle {
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 120px;
-            height: 120px;
-            border-left: 1px solid black;
-            border-bottom: 1px solid black;
-            background: white; /* Matches paper */
-            /* Using clip-path to strictly cut the triangle shape is cleaner, 
-               but CSS borders on a rotated div is the classic way to get the diagonal line.
-               Here is a clean implementation of the 'Corner' look: */
-            background: linear-gradient(to bottom left, white 50%, white 50%);
-        }
-
-        /* Using a pseudo-element for the diagonal line */
-        .grading-triangle::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 0;
-            height: 0;
-            border-style: solid;
-            border-width: 0 100px 100px 0;
-            border-color: transparent black transparent transparent;
-            /* Actually, a simpler approach for the 'Note' box often seen in exams:
-               Just a triangular overlay or a border. Let's do the specific diagonal line requirement. */
-        }
-        
-        /* Refined Triangle Approach */
-        .note-box {
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 90px;
-            height: 90px;
-            /* Create the diagonal line */
-            background: linear-gradient(to bottom left, transparent 49%, black 50%, transparent 51%);
-            z-index: 10;
-        }
-
-        .note-text {
-            position: absolute;
-            top: 20px;
-            right: 5px;
-            font-weight: bold;
-            font-size: 14px;
-            text-align: center;
-        }
-
-        /* 2. Header Section */
-        header {
-            border: 2px solid black;
-            padding: 15px;
-            text-align: center;
-            margin-bottom: 30px;
-            margin-right: 70px; /* Space for the triangle note area */
-        }
-
-        h1 {
-            font-size: 18pt;
-            font-weight: bold;
-            text-transform: uppercase;
-            margin-bottom: 10px;
-            letter-spacing: 1px;
-        }
-
-        .header-info {
-            display: flex;
-            justify-content: space-between;
-            font-size: 12pt;
-            margin-top: 5px;
-            padding: 0 20px;
-        }
-
-        /* 3. Exercises Layout */
-        .exercise {
-            margin-bottom: 25px;
-        }
-
-        .exercise-title {
-            display: flex;
-            justify-content: space-between;
-            font-weight: bold;
-            text-decoration: underline;
-            margin-bottom: 10px;
-            font-size: 13pt;
-        }
-
-        .exercise-content ul {
-            list-style-type: disc;
-            margin-left: 25px;
-        }
-
-        .exercise-content li {
-            margin-bottom: 8px;
-            text-align: justify;
-        }
-
-        .sub-questions {
-            list-style-type: lower-alpha !important; /* a), b), c) */
-            margin-left: 20px;
-            margin-top: 5px;
-        }
-
-        /* Print Settings */
+        /* Print adjustments */
         @media print {
-            body {
-                background: none;
-                padding: 0;
-            }
-            .page {
-                box-shadow: none;
-                width: 100%;
-                margin: 0;
-                border: none;
-                height: auto;
-            }
-            /* Ensure background graphics (like the grading triangle gradient) print */
-            * {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
+            body { background: white; }
+            .no-print { display: none !important; }
+            .paper { box-shadow: none; margin: 0; padding: 10mm; width: 100%; max-width: none; }
         }
+
+        /* Mobile adjustments */
+        @media (max-width: 640px) {
+            .paper { padding: 15px; width: 100%; min-height: 100vh; }
+        }
+
+        /* Transition effects */
+        .fade-enter { opacity: 0; }
+        .fade-enter-active { opacity: 1; transition: opacity 300ms; }
+        
+        /* Custom Scrollbar for Menu */
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
     </style>
 </head>
-<body>
+<body class="bg-gray-600 font-serif text-gray-900 min-h-screen flex flex-col items-center py-4 sm:py-8">
 
-    <div class="page">
-        <!-- The Triangle Grading Box -->
-        <div class="note-box">
-            <div class="note-text">
-                Note<br>
-                / 20
-            </div>
+    <!-- LOADING SPINNER -->
+    <div id="loader" class="fixed inset-0 bg-gray-800 bg-opacity-90 z-50 flex items-center justify-center text-white">
+        <div class="text-center">
+            <i class="fas fa-circle-notch fa-spin text-4xl mb-4"></i>
+            <p>Chargement des sujets...</p>
         </div>
-
-        <!-- Header -->
-        <header>
-            <h1>Contrôle Continu N°2 : Mathématiques</h1>
-            <div class="header-info">
-                <span>Niveau : T.C.S.F</span>
-                <span>Durée : 2 Heures</span>
-            </div>
-            <div class="header-info">
-                <span>Professeur : DALHI Hamid</span>
-                <span>Année : 2024/2025</span>
-            </div>
-        </header>
-
-        <!-- Exercice 1 -->
-        <div class="exercise">
-            <div class="exercise-title">
-                <span>Exercice 1 : Ensembles de Nombres et Identités</span>
-                <span>(4,5 pts)</span>
-            </div>
-            <div class="exercise-content">
-                <ul>
-                    <li>Calculer et simplifier : \( A = \left( \sqrt{4 - \sqrt{7}} + \sqrt{4 + \sqrt{7}} \right)^2 \).</li>
-                    <li>Rendre rationnel le dénominateur : \( \frac{2 + \sqrt{10}}{1 + \sqrt{10}} \).</li>
-                    <li>Démontrer que \( D = \frac{\sqrt{2}+1}{\sqrt{2}-1} - 2\sqrt{2} \) est un entier naturel.</li>
-                    <li>Factoriser : \( C = 25x^2 - 30x + 9 + (3x - 7)(5x - 3) - 10x + 6 \).</li>
-                </ul>
-            </div>
-        </div>
-
-        <!-- Exercice 2 -->
-        <div class="exercise">
-            <div class="exercise-title">
-                <span>Exercice 2 : Ordre dans \(\mathbb{R}\) et Valeur Absolue</span>
-                <span>(6,5 pts)</span>
-            </div>
-            <div class="exercise-content">
-                <ul>
-                    <li>Simplifier : \( A = \sqrt{(1+\sqrt{2})^2} - \sqrt{(1-\sqrt{2})^2} \).</li>
-                    <li>Résoudre dans \(\mathbb{R}\) : \( |3x + 1| - 5 = 13 \) ; \( |4x + 3| = |3x - 5| \) ; \( |2x + 2| \geq 3 \).</li>
-                    <li>Soit \( B = \frac{1}{\sqrt{1+x^2}} \).
-                        <ul class="sub-questions">
-                            <li>Montrer que \( B - 1 = \frac{-x^2}{\sqrt{1+x^2} + 1 + x^2} \).</li>
-                            <li>En déduire que \( |B - 1| \leq \frac{1}{2}x^2 \).</li>
-                            <li>Donner une valeur approchée de \( \frac{1}{\sqrt{1,0004}} \) à \( 2.10^{-4} \) près.</li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
-        </div>
-
-        <!-- Exercice 3 -->
-        <div class="exercise">
-            <div class="exercise-title">
-                <span>Exercice 3 : Encadrements et Démonstrations</span>
-                <span>(5 pts)</span>
-            </div>
-            <div class="exercise-content">
-                <ul>
-                    <li>Soit \( -2 \leq x \leq 5 \) et \( -5 \leq y \leq -3 \). Encadrer : \( x - y \), \( xy \), et \( y^2 \).</li>
-                    <li>Soit \( a > 0 \).
-                        <ul class="sub-questions">
-                            <li>Montrer que \( 1 + a + \sqrt{1+2a} > 2 \).</li>
-                            <li>Montrer que \( \sqrt{1+2a} - (1+a) = \frac{-a^2}{1+a+\sqrt{1+2a}} \).</li>
-                            <li>En déduire que \( \frac{-a^2}{2} < \sqrt{1+2a} - 1 - a < 0 \).</li>
-                        </ul>
-                    </li>
-                    <li>Soient \( a+b=3 \) et \( a^2+b^2=5 \). Calculer \( ab \) et \( a^4+b^4 \).</li>
-                </ul>
-            </div>
-        </div>
-
-        <!-- Exercice 4 -->
-        <div class="exercise">
-            <div class="exercise-title">
-                <span>Exercice 4 : Géométrie Analytique</span>
-                <span>(4 pts)</span>
-            </div>
-            <div class="exercise-content">
-                Soient \( A(0, 3) \), \( B(1, 2) \) et \( C(3, -1) \).
-                <ul>
-                    <li>Montrer que \( A, B, C \) ne sont pas alignés.</li>
-                    <li>Équation cartésienne de \( (AB) \).</li>
-                    <li>Soit \( (D): \{ x = -3k, y = 1 + k \} \). Donner l'équation de \( (\Delta) \) passant par \( C \) et parallèle à \( (D) \).</li>
-                    <li>Intersection de \( (D_1): x - y + 2 = 0 \) et \( (D_2): x + 3y - 1 = 0 \).</li>
-                </ul>
-            </div>
-        </div>
-
     </div>
 
-</body>
-</html>        body {
-            background-color: #0b0f19;
-        }
-    </style>
-</head>
-<body>
-    <div id="root"></div>
+    <!-- MAIN EXAM CONTAINER -->
+    <div id="exam-container" class="paper hidden">
+        <!-- Content injected via JS -->
+    </div>
 
-    <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+    <!-- EMPTY STATE -->
+    <div id="empty-state" class="hidden text-white text-center mt-20">
+        <i class="fas fa-folder-open text-6xl mb-4 text-gray-400"></i>
+        <p class="text-xl">Aucun sujet disponible.</p>
+        <p class="text-sm text-gray-400">Connectez-vous en admin pour en créer un.</p>
+    </div>
+
+    <!-- FAB MENU (Floating Action Button) -->
+    <div class="fixed bottom-6 right-6 z-40 no-print flex flex-col items-end gap-3">
         
-        // --- Library Setup ---
+        <!-- Menu List (Hidden by default) -->
+        <div id="fab-menu" class="bg-white rounded-lg shadow-xl p-2 w-64 transform scale-0 origin-bottom-right transition-transform duration-200 ease-out mb-2 max-h-[70vh] flex flex-col">
+            <div class="p-2 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t">
+                <span class="font-bold text-gray-700 text-sm">Sujets Disponibles</span>
+                <button onclick="toggleAdminPanel()" class="text-gray-400 hover:text-blue-600 transition p-1" title="Administration">
+                    <i class="fas fa-lock"></i>
+                </button>
+            </div>
+            
+            <div id="subject-list" class="flex-1 overflow-y-auto custom-scroll p-1 space-y-1">
+                <!-- List items injected here -->
+            </div>
+
+            <!-- Admin Add Button (Only visible if admin) -->
+            <button id="btn-add-new" class="hidden w-full mt-2 bg-green-600 hover:bg-green-700 text-white py-2 rounded text-sm font-bold items-center justify-center gap-2 transition" onclick="openEditor()">
+                <i class="fas fa-plus"></i> Nouveau Sujet
+            </button>
+        </div>
+
+        <!-- Main FAB Button -->
+        <button onclick="toggleMenu()" class="bg-blue-600 hover:bg-blue-700 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-xl transition-transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-blue-300">
+            <i class="fas fa-bars" id="fab-icon"></i>
+        </button>
+    </div>
+
+    <!-- ADMIN AUTH MODAL -->
+    <div id="auth-modal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden flex items-center justify-center px-4">
+        <div class="bg-white rounded-lg p-6 w-full max-w-sm shadow-2xl">
+            <h3 class="text-lg font-bold mb-4 text-center">Accès Professeur</h3>
+            <input type="password" id="admin-pin" placeholder="Code PIN (9090)" class="w-full border p-3 rounded mb-4 text-center text-lg tracking-widest focus:ring-2 focus:ring-blue-500 outline-none" inputmode="numeric">
+            <div class="flex gap-2">
+                <button onclick="closeModals()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded transition">Annuler</button>
+                <button onclick="verifyPin()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded transition font-bold">Entrer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDITOR MODAL -->
+    <div id="editor-modal" class="fixed inset-0 bg-black bg-opacity-90 z-50 hidden flex flex-col">
+        <div class="bg-gray-800 text-white p-4 flex justify-between items-center shadow-md">
+            <h3 class="font-bold text-lg"><i class="fas fa-edit mr-2"></i>Éditeur de Sujet</h3>
+            <button onclick="closeModals()" class="text-gray-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+        </div>
         
-        // Recharts extraction
-        const { 
-            LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip: RechartsTooltip, 
-            ResponsiveContainer, Legend, AreaChart, Area 
-        } = Recharts;
-
-        // Icon Components (Recreating Lucide icons as simple SVGs for standalone usage)
-        const Icon = ({ path, size = 24, className = "" }) => (
-            <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                width={size} 
-                height={size} 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                className={className}
-            >
-                {path}
-            </svg>
-        );
-
-        const TrendingUp = (p) => <Icon {...p} path={<><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></>} />;
-        const TrendingDown = (p) => <Icon {...p} path={<><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></>} />;
-        const Activity = (p) => <Icon {...p} path={<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>} />;
-        const Search = (p) => <Icon {...p} path={<><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></>} />;
-        const Filter = (p) => <Icon {...p} path={<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>} />;
-        const ArrowUpRight = (p) => <Icon {...p} path={<><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></>} />;
-        const ArrowDownRight = (p) => <Icon {...p} path={<><line x1="7" y1="7" x2="17" y2="17"></line><polyline points="17 7 17 17 7 17"></polyline></>} />;
-        const Zap = (p) => <Icon {...p} path={<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>} />;
-        const Layers = (p) => <Icon {...p} path={<><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></>} />;
-        const BarChart3 = (p) => <Icon {...p} path={<><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></>} />;
-        const MemoryStick = (p) => <Icon {...p} path={<><path d="M6 19v-3"/><path d="M10 19v-3"/><path d="M14 19v-3"/><path d="M18 19v-3"/><path d="M8 11V9"/><path d="M16 11V9"/><path d="M12 11V9"/><path d="M2 15h20"/><path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v1.1a2 2 0 0 0 0 3.837V17a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-5.1a2 2 0 0 0 0-3.837Z"/></>} />;
-        const AlertTriangle = (p) => <Icon {...p} path={<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />} />;
-        // --- End Library Setup ---
-
-        // --- DATA CONSTANTS (Late 2025 Market Data) ---
-        const NVIDIA_GPUS = [
-          { id: 'n1', brand: 'Nvidia', model: 'RTX 5090', basePrice: 2650, vram: '32GB GDDR7', score: 100, type: 'Titan Class' },
-          { id: 'n2', brand: 'Nvidia', model: 'RTX 5080', basePrice: 1150, vram: '16GB GDDR7', score: 82, type: 'High-End' },
-          { id: 'n3', brand: 'Nvidia', model: 'RTX 5070 Ti', basePrice: 799, vram: '16GB GDDR7', score: 68, type: 'Mid-Range' },
-          { id: 'n4', brand: 'Nvidia', model: 'RTX 5070', basePrice: 560, vram: '12GB GDDR7', score: 58, type: 'Mid-Range' },
-          { id: 'n5', brand: 'Nvidia', model: 'RTX 5060 Ti', basePrice: 440, vram: '16GB GDDR7', score: 48, type: 'Mainstream' },
-          { id: 'n6', brand: 'Nvidia', model: 'RTX 5060', basePrice: 299, vram: '8GB GDDR7', score: 38, type: 'Entry Level' },
-          { id: 'n7', brand: 'Nvidia', model: 'RTX 5050', basePrice: 230, vram: '8GB GDDR6', score: 28, type: 'Budget' },
-        ];
-
-        const AMD_GPUS = [
-          { id: 'a1', brand: 'AMD', model: 'RX 9070 XT', basePrice: 629, vram: '16GB GDDR6', score: 70, type: 'High-End' },
-          { id: 'a2', brand: 'AMD', model: 'RX 9070', basePrice: 549, vram: '16GB GDDR6', score: 62, type: 'Mid-Range' },
-          { id: 'a3', brand: 'AMD', model: 'RX 9060 XT', basePrice: 369, vram: '16GB GDDR6', score: 45, type: 'Mainstream' },
-          { id: 'a4', brand: 'AMD', model: 'RX 9060', basePrice: 289, vram: '8GB GDDR6', score: 36, type: 'Entry Level' },
-          { id: 'a5', brand: 'AMD', model: 'RX 7900 XTX', basePrice: 899, vram: '24GB GDDR6', score: 75, type: 'Last Gen Flagship' },
-        ];
-
-        const INTEL_GPUS = [
-          { id: 'i1', brand: 'Intel', model: 'Arc B580', basePrice: 249, vram: '12GB GDDR6', score: 35, type: 'Budget King' },
-          { id: 'i2', brand: 'Intel', model: 'Arc B570', basePrice: 219, vram: '10GB GDDR6', score: 30, type: 'Entry Level' },
-        ];
-
-        const RAM_DATA = [
-          { id: 'r1', type: 'DDR5', name: '32GB Kit (6000MHz)', basePrice: 145, volatility: 0.05 },
-          { id: 'r2', type: 'DDR5', name: '64GB Kit (6000MHz)', basePrice: 260, volatility: 0.04 },
-          { id: 'r3', type: 'DDR4', name: '16GB Kit (3200MHz)', basePrice: 85, volatility: 0.08 }, // High volatility due to scarcity
-          { id: 'r4', type: 'DDR4', name: '32GB Kit (3600MHz)', basePrice: 130, volatility: 0.07 },
-        ];
-
-        const ALL_GPUS = [...NVIDIA_GPUS, ...AMD_GPUS, ...INTEL_GPUS];
-
-        // --- HELPER COMPONENTS ---
-
-        const Card = ({ children, className = "" }) => (
-          <div className={`bg-slate-900/60 border border-slate-800 rounded-xl overflow-hidden backdrop-blur-sm shadow-xl ${className}`}>
-            {children}
-          </div>
-        );
-
-        const Badge = ({ children, color }) => {
-          const colors = {
-            green: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-            red: "bg-rose-500/10 text-rose-400 border-rose-500/20",
-            blue: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-            purple: "bg-purple-500/10 text-purple-400 border-purple-500/20",
-            yellow: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
-          };
-          return (
-            <span className={`px-2 py-0.5 text-xs font-bold uppercase tracking-wider rounded border ${colors[color] || colors.blue}`}>
-              {children}
-            </span>
-          );
-        };
-
-        const PriceDelta = ({ current, last }) => {
-          const diff = current - last;
-          const percent = last > 0 ? ((diff / last) * 100).toFixed(2) : '0.00';
-          const isUp = diff > 0;
-          
-          if (Math.abs(diff) < 0.01) return <span className="text-slate-500 text-xs">-</span>;
-
-          return (
-            <div className={`flex items-center gap-1 text-xs font-mono ${isUp ? 'text-rose-400' : 'text-emerald-400'}`}>
-              {isUp ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-              <span>{Math.abs(diff).toFixed(2)} ({percent}%)</span>
-            </div>
-          );
-        };
-
-        // --- MAIN APP ---
-
-        function GPUMarketTracker() {
-          const [gpus, setGpus] = useState(ALL_GPUS.map(g => ({ ...g, currentPrice: g.basePrice, lastPrice: g.basePrice })));
-          const [ram, setRam] = useState(RAM_DATA.map(r => ({ ...r, currentPrice: r.basePrice, lastPrice: r.basePrice })));
-          const [history, setHistory] = useState([]);
-          const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'nvidia', 'amd', 'ram'
-          const [tick, setTick] = useState(0);
-
-          // --- MARKET SIMULATION ENGINE ---
-          useEffect(() => {
-            const interval = setInterval(() => {
-              setTick(t => t + 1);
-
-              // Simulate GPU Prices
-              setGpus(prev => prev.map(gpu => {
-                // Volatility Factors: Nvidia High End (high), AMD Value (med), Intel Budget (low)
-                let volatility = 0.01; 
-                if (gpu.basePrice > 1000) volatility = 0.025; // Scalper tax simulation
-                if (gpu.brand === 'Intel') volatility = 0.005; // Stable budget
-
-                const sentiment = Math.sin(tick / 10) * 0.005; // Market wave
-                const change = (Math.random() - 0.5 + sentiment) * volatility * gpu.basePrice;
-                let newPrice = gpu.currentPrice + change;
-                
-                // Hard limits to prevent unrealistic drift
-                newPrice = Math.max(gpu.basePrice * 0.8, Math.min(gpu.basePrice * 1.6, newPrice));
-
-                return { ...gpu, lastPrice: gpu.currentPrice, currentPrice: Number(newPrice.toFixed(2)) };
-              }));
-
-              // Simulate RAM Prices
-              setRam(prev => prev.map(r => {
-                const change = (Math.random() - 0.45) * r.volatility * 5; // Slight upward trend for RAM
-                return { ...r, lastPrice: r.currentPrice, currentPrice: Number((r.currentPrice + change).toFixed(2)) };
-              }));
-
-            }, 2000);
-
-            return () => clearInterval(interval);
-          }, [tick]);
-
-          // Update Chart History
-          useEffect(() => {
-            if (tick === 0) return;
-            setHistory(prev => {
-              const point = {
-                time: new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-                'RTX 5090': gpus.find(g => g.model === 'RTX 5090')?.currentPrice || 0,
-                'RX 9070 XT': gpus.find(g => g.model === 'RX 9070 XT')?.currentPrice || 0,
-                'Arc B570': gpus.find(g => g.model === 'Arc B570')?.currentPrice || 0,
-                'DDR5 32GB': ram.find(r => r.name.includes('DDR5') && r.name.includes('32GB'))?.currentPrice || 0
-              };
-              const newHist = [...prev, point];
-              if (newHist.length > 30) newHist.shift();
-              return newHist;
-            });
-          }, [gpus, ram, tick]);
-
-          // --- DERIVED METRICS ---
-          const cheapestGPU = useMemo(() => [...gpus].sort((a, b) => a.currentPrice - b.currentPrice)[0], [gpus]);
-          const expensiveGPU = useMemo(() => [...gpus].sort((a, b) => b.currentPrice - a.currentPrice)[0], [gpus]);
-          
-          const getGpuList = (brand) => gpus.filter(g => g.brand === brand).sort((a, b) => b.currentPrice - a.currentPrice);
-
-          const renderTable = (data) => (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left text-slate-300">
-                <thead className="text-xs text-slate-400 uppercase bg-slate-800/80 border-b border-slate-700">
-                  <tr>
-                    <th className="px-6 py-4">Model</th>
-                    <th className="px-6 py-4">VRAM / Spec</th>
-                    <th className="px-6 py-4">Performance Score</th>
-                    <th className="px-6 py-4">Live Price</th>
-                    <th className="px-6 py-4 text-right">Trend</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.map((item) => (
-                    <tr key={item.id} className="border-b border-slate-800 hover:bg-slate-800/40 transition-colors">
-                      <td className="px-6 py-4 font-medium text-white">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-1 h-8 rounded-full ${
-                            item.brand === 'Nvidia' ? 'bg-green-500' : item.brand === 'AMD' ? 'bg-red-500' : 'bg-blue-500'
-                          }`}></div>
-                          <div>
-                            <div className="text-base font-bold">{item.model}</div>
-                            <div className="text-xs text-slate-500">{item.type}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-slate-400">{item.vram}</td>
-                      <td className="px-6 py-4">
-                         <div className="flex items-center gap-2">
-                            <div className="w-24 bg-slate-800 rounded-full h-1.5">
-                              <div className={`h-1.5 rounded-full ${item.score > 80 ? 'bg-purple-500' : 'bg-slate-600'}`} style={{width: `${item.score}%`}}></div>
-                            </div>
-                            <span className="text-xs">{item.score}</span>
-                         </div>
-                      </td>
-                      <td className="px-6 py-4 font-mono text-white text-lg">
-                        ${item.currentPrice.toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <PriceDelta current={item.currentPrice} last={item.lastPrice} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          );
-
-          return (
-            <div className="min-h-screen bg-[#0b0f19] text-slate-200 font-sans selection:bg-indigo-500/30 pb-20">
-              
-              {/* Header */}
-              <nav className="border-b border-slate-800 bg-[#0f1422]/80 backdrop-blur-md sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-indigo-600 p-2 rounded-lg shadow-lg shadow-indigo-500/20">
-                      <Activity className="text-white" size={20} />
-                    </div>
-                    <h1 className="text-xl font-bold text-white tracking-tight">GPU<span className="text-indigo-500">Tracker</span>.live</h1>
-                  </div>
-                  
-                  <div className="flex gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800">
-                    {[
-                      { id: 'dashboard', icon: Layers, label: 'Overview' },
-                      { id: 'nvidia', icon: Zap, label: 'Nvidia List' },
-                      { id: 'amd', icon: BarChart3, label: 'AMD List' },
-                      { id: 'ram', icon: MemoryStick, label: 'RAM Prices' },
-                    ].map(tab => (
-                      <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                          activeTab === tab.id 
-                          ? 'bg-slate-800 text-white shadow-sm' 
-                          : 'text-slate-400 hover:text-slate-200'
-                        }`}
-                      >
-                        <tab.icon size={14} />
-                        <span className="hidden sm:inline">{tab.label}</span>
-                      </button>
-                    ))}
-                  </div>
+        <div class="flex-1 flex flex-col md:flex-row bg-white overflow-hidden">
+            <!-- Left: Inputs -->
+            <div class="w-full md:w-1/2 p-4 flex flex-col border-r border-gray-200 bg-gray-50">
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Titre du Sujet</label>
+                    <input type="text" id="edit-title" class="w-full border border-gray-300 p-2 rounded focus:border-blue-500 outline-none" placeholder="Ex: Sujet B : Analyse">
                 </div>
-              </nav>
-
-              <main className="max-w-7xl mx-auto px-4 py-8 space-y-6">
                 
-                {/* DASHBOARD VIEW */}
-                {activeTab === 'dashboard' && (
-                  <>
-                    {/* Market Extremes Widget */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                       <Card className="relative group hover:border-emerald-500/30 transition-colors">
-                          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-400"></div>
-                          <div className="p-6">
-                            <div className="flex justify-between items-start mb-4">
-                              <div>
-                                <Badge color="green">Lowest Entry Point</Badge>
-                                <h3 className="text-2xl font-bold text-white mt-2">{cheapestGPU.model}</h3>
-                                <p className="text-slate-400 text-sm">Intel Battlemage Architecture</p>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-3xl font-mono text-white font-bold tracking-tighter">
-                                  ${cheapestGPU.currentPrice.toFixed(2)}
-                                </div>
-                                <PriceDelta current={cheapestGPU.currentPrice} last={cheapestGPU.lastPrice} />
-                              </div>
-                            </div>
-                            <div className="bg-slate-950/50 rounded-lg p-3 text-xs text-slate-400 flex justify-between items-center">
-                              <span>Value Score: <strong>{(cheapestGPU.score / cheapestGPU.currentPrice * 100).toFixed(1)}</strong></span>
-                              <span>Target: 1080p High</span>
-                            </div>
-                          </div>
-                       </Card>
-
-                       <Card className="relative group hover:border-purple-500/30 transition-colors">
-                          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-pink-500"></div>
-                          <div className="p-6">
-                            <div className="flex justify-between items-start mb-4">
-                              <div>
-                                <Badge color="purple">Market Ceiling</Badge>
-                                <h3 className="text-2xl font-bold text-white mt-2">{expensiveGPU.model}</h3>
-                                <p className="text-slate-400 text-sm">Nvidia Blackwell Architecture</p>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-3xl font-mono text-white font-bold tracking-tighter">
-                                  ${expensiveGPU.currentPrice.toFixed(2)}
-                                </div>
-                                <PriceDelta current={expensiveGPU.currentPrice} last={expensiveGPU.lastPrice} />
-                              </div>
-                            </div>
-                            <div className="bg-slate-950/50 rounded-lg p-3 text-xs text-slate-400 flex justify-between items-center">
-                              <span>Price Gap: <strong>{((expensiveGPU.currentPrice / cheapestGPU.currentPrice)).toFixed(1)}x</strong> vs Cheapest</span>
-                              <span>Target: 8K AI/Pro</span>
-                            </div>
-                          </div>
-                       </Card>
-                    </div>
-
-                    {/* Main Live Chart */}
-                    <Card className="p-6 h-[400px]">
-                      <div className="flex items-center justify-between mb-6">
-                        <div>
-                          <h2 className="text-lg font-bold text-white">Market Pulse (Real-Time)</h2>
-                          <p className="text-sm text-slate-400">Tracking Price Volatility across segments</p>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs">
-                          <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-500"></div> Flagship</span>
-                          <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-red-500"></div> Value King</span>
-                          <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-yellow-500"></div> RAM</span>
-                        </div>
-                      </div>
-                      <ResponsiveContainer width="100%" height="85%">
-                        <AreaChart data={history}>
-                          <defs>
-                            <linearGradient id="colorNv" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
-                              <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                            </linearGradient>
-                            <linearGradient id="colorAmd" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#ef4444" stopOpacity={0.1}/>
-                              <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                          <XAxis dataKey="time" stroke="#475569" fontSize={11} tick={{fill: '#64748b'}} />
-                          <YAxis stroke="#475569" fontSize={11} tick={{fill: '#64748b'}} domain={['auto', 'auto']} />
-                          <RechartsTooltip 
-                            contentStyle={{ backgroundColor: '#0f1422', borderColor: '#334155', color: '#f8fafc', fontSize: '12px' }} 
-                          />
-                          <Area type="monotone" dataKey="RTX 5090" stroke="#10b981" fillOpacity={1} fill="url(#colorNv)" strokeWidth={2} />
-                          <Area type="monotone" dataKey="RX 9070 XT" stroke="#ef4444" fillOpacity={1} fill="url(#colorAmd)" strokeWidth={2} />
-                          <Area type="monotone" dataKey="DDR5 32GB" stroke="#eab308" fill="transparent" strokeDasharray="5 5" strokeWidth={2} />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    </Card>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                       {/* Quick Ticker */}
-                       <Card className="p-4">
-                          <h3 className="text-sm font-semibold text-slate-400 mb-4 uppercase tracking-wider">Top Movers</h3>
-                          <div className="space-y-3">
-                            {gpus.slice(0, 3).map(g => (
-                              <div key={g.id} className="flex justify-between items-center text-sm">
-                                <span className="text-white">{g.model}</span>
-                                <PriceDelta current={g.currentPrice} last={g.lastPrice} />
-                              </div>
-                            ))}
-                          </div>
-                       </Card>
-                       {/* Advice */}
-                       <Card className="p-4 bg-gradient-to-br from-indigo-900/10 to-blue-900/10 border-indigo-500/20">
-                          <div className="flex gap-3">
-                            <div className="mt-1"><AlertTriangle size={18} className="text-yellow-400"/></div>
-                            <div>
-                              <h3 className="text-sm font-bold text-white">Market Advisory</h3>
-                              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                                DDR4 RAM prices are exhibiting "legacy scarcity" inflation. 
-                                It is currently more cost-effective per GB to build new DDR5 systems than to upgrade older DDR4 platforms.
-                                RTX 5090 stock is critical; expect street prices 30-40% over MSRP.
-                              </p>
-                            </div>
-                          </div>
-                       </Card>
-                    </div>
-                  </>
-                )}
-
-                {/* NVIDIA LIST */}
-                {activeTab === 'nvidia' && (
-                  <Card>
-                    <div className="p-6 border-b border-slate-700">
-                      <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]"></span>
-                        Nvidia GeForce 50-Series
-                      </h2>
-                      <p className="text-slate-400 text-sm mt-1">Blackwell Architecture • Live Street Pricing</p>
-                    </div>
-                    {renderTable(getGpuList('Nvidia'))}
-                  </Card>
-                )}
-
-                {/* AMD LIST */}
-                {activeTab === 'amd' && (
-                  <Card>
-                    <div className="p-6 border-b border-slate-700">
-                      <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                        <span className="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"></span>
-                        AMD Radeon 9000-Series
-                      </h2>
-                      <p className="text-slate-400 text-sm mt-1">RDNA 4 Architecture • Live Street Pricing</p>
-                    </div>
-                    {renderTable(getGpuList('AMD'))}
-                  </Card>
-                )}
-
-                {/* RAM VIEW */}
-                {activeTab === 'ram' && (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {ram.map(r => (
-                        <Card key={r.id} className="p-6 border-l-4 border-l-indigo-500">
-                          <div className="flex justify-between items-start">
-                            <div>
-                               <div className="flex items-center gap-2 mb-2">
-                                 <span className={`text-xs font-bold px-2 py-0.5 rounded ${r.type === 'DDR5' ? 'bg-indigo-500/20 text-indigo-300' : 'bg-slate-700 text-slate-300'}`}>
-                                   {r.type}
-                                 </span>
-                                 <span className="text-slate-400 text-xs">Market Price</span>
-                               </div>
-                               <h3 className="text-xl font-bold text-white">{r.name}</h3>
-                            </div>
-                            <div className="text-right">
-                               <div className="text-3xl font-mono text-white">${r.currentPrice.toFixed(2)}</div>
-                               <PriceDelta current={r.currentPrice} last={r.lastPrice} />
-                            </div>
-                          </div>
-                          <div className="mt-4 pt-4 border-t border-slate-800 text-xs text-slate-500">
-                            Volatility Index: {(r.volatility * 100).toFixed(0)}% • Supply: {r.type === 'DDR4' ? 'Constrained' : 'Abundant'}
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
-
-                    <Card className="p-6">
-                       <h3 className="text-lg font-bold text-white mb-4">Memory Price Trend (Last 60 Seconds)</h3>
-                       <div className="h-[300px] w-full">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={history}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                              <XAxis dataKey="time" stroke="#475569" fontSize={11} tick={{fill: '#64748b'}} />
-                              <YAxis domain={['auto', 'auto']} stroke="#475569" fontSize={11} tick={{fill: '#64748b'}} />
-                              <RechartsTooltip contentStyle={{ backgroundColor: '#0f1422', borderColor: '#334155', color: '#f8fafc' }} />
-                              <Legend />
-                              <Line type="step" dataKey="DDR5 32GB" stroke="#818cf8" strokeWidth={2} dot={false} />
-                              <Line type="step" dataKey="Arc B570" stroke="#94a3b8" strokeWidth={2} strokeDasharray="3 3" dot={false} name="Reference GPU (Cheap)" />
-                            </LineChart>
-                          </ResponsiveContainer>
-                       </div>
-                    </Card>
-                  </div>
-                )}
-              </main>
+                <div class="flex-1 flex flex-col">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1 flex justify-between">
+                        <span>Code HTML (Corps du devoir)</span>
+                        <span class="text-xs font-normal normal-case text-blue-600 cursor-pointer hover:underline" onclick="insertTemplate()">Insérer Template</span>
+                    </label>
+                    <textarea id="edit-content" class="flex-1 w-full border border-gray-300 p-2 rounded font-mono text-sm focus:border-blue-500 outline-none resize-none" placeholder="<div class='exercise'>...</div>"></textarea>
+                    <p class="text-xs text-gray-500 mt-1">Utilisez $...$ pour les maths en ligne et $$...$$ pour les blocs.</p>
+                </div>
             </div>
-          );
+
+            <!-- Right: Preview (Hidden on small mobile until toggled, but visible here for simplicity) -->
+            <div class="hidden md:block w-1/2 bg-gray-100 overflow-y-auto p-8 flex justify-center">
+                <div id="live-preview" class="bg-white shadow p-8 w-full min-h-[500px] text-sm transform scale-90 origin-top">
+                    <!-- Preview renders here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gray-800 p-4 flex justify-between items-center">
+            <button onclick="deleteCurrentSubject()" id="btn-delete" class="text-red-400 hover:text-red-300 text-sm font-bold px-4">
+                <i class="fas fa-trash"></i> Supprimer
+            </button>
+            <div class="flex gap-3">
+                <button onclick="closeModals()" class="bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded transition">Annuler</button>
+                <button onclick="saveSubject()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded font-bold shadow-lg transition transform hover:scale-105">
+                    <i class="fas fa-save mr-2"></i> Publier
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="fixed top-5 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full shadow-2xl z-50 transition-all duration-300 opacity-0 translate-y-[-20px] pointer-events-none">
+        <span id="toast-msg">Notification</span>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        // --- Configuration ---
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = __app_id || 'default-math-app';
+        const COLLECTION_NAME = 'exams';
+
+        // --- State ---
+        let subjects = [];
+        let currentSubjectId = null;
+        let isAdmin = false;
+        let unsubscribe = null;
+
+        // --- DOM Elements ---
+        const elLoader = document.getElementById('loader');
+        const elContainer = document.getElementById('exam-container');
+        const elEmpty = document.getElementById('empty-state');
+        const elFabMenu = document.getElementById('fab-menu');
+        const elSubjectList = document.getElementById('subject-list');
+        const elFabIcon = document.getElementById('fab-icon');
+        const elAuthModal = document.getElementById('auth-modal');
+        const elEditorModal = document.getElementById('editor-modal');
+        const elEditTitle = document.getElementById('edit-title');
+        const elEditContent = document.getElementById('edit-content');
+        const elBtnAdd = document.getElementById('btn-add-new');
+
+        // --- Initialization ---
+        async function init() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                     // For specialized environments
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                // Listen to Realtime Updates
+                const q = query(
+                    collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME), 
+                    orderBy('title') // Simple sort
+                );
+
+                unsubscribe = onSnapshot(q, (snapshot) => {
+                    subjects = [];
+                    snapshot.forEach(doc => {
+                        subjects.push({ id: doc.id, ...doc.data() });
+                    });
+                    
+                    renderMenu();
+                    
+                    // Logic to select first exam if none selected, or refresh current
+                    if (subjects.length > 0) {
+                        if (!currentSubjectId || !subjects.find(s => s.id === currentSubjectId)) {
+                            loadExam(subjects[0].id); // Load first by default
+                        } else {
+                            loadExam(currentSubjectId); // Refresh current
+                        }
+                        elEmpty.classList.add('hidden');
+                        elContainer.classList.remove('hidden');
+                    } else {
+                        elEmpty.classList.remove('hidden');
+                        elContainer.classList.add('hidden');
+                    }
+                    
+                    elLoader.classList.add('hidden');
+                }, (error) => {
+                    console.error("Error fetching data:", error);
+                    showToast("Erreur de connexion", true);
+                });
+
+            } catch (err) {
+                console.error("Init failed", err);
+                showToast("Erreur d'initialisation", true);
+            }
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<GPUMarketTracker />);
+        // --- Core UI Functions ---
+
+        window.loadExam = (id) => {
+            currentSubjectId = id;
+            const subject = subjects.find(s => s.id === id);
+            if (!subject) return;
+
+            // Highlight in menu
+            document.querySelectorAll('.subject-btn').forEach(btn => {
+                if(btn.dataset.id === id) {
+                    btn.classList.add('bg-blue-100', 'text-blue-700', 'font-bold');
+                    btn.classList.remove('text-gray-600', 'hover:bg-gray-100');
+                } else {
+                    btn.classList.remove('bg-blue-100', 'text-blue-700', 'font-bold');
+                    btn.classList.add('text-gray-600', 'hover:bg-gray-100');
+                }
+            });
+
+            // Inject HTML
+            elContainer.innerHTML = `
+                <header class="border-2 border-black p-4 text-center mb-8">
+                    <h1 class="text-2xl font-bold uppercase mb-2">${subject.title}</h1>
+                    <div class="flex flex-wrap justify-between text-sm gap-2">
+                        <span class="w-full sm:w-auto text-left"><strong>Niveau :</strong> T.C.S.F</span>
+                        <span class="w-full sm:w-auto text-left"><strong>Durée :</strong> 120 Minutes</span>
+                        <span class="w-full sm:w-auto text-left"><strong>Professeur :</strong> DALHI Hamid</span>
+                        <span class="w-full sm:w-auto text-left"><strong>Année :</strong> 2024/2025</span>
+                    </div>
+                    <div class="mt-2 pt-1 border-t border-black w-full text-center font-bold">
+                        Note : ......... / 20
+                    </div>
+                </header>
+                <div class="content-body text-justify leading-relaxed">
+                    ${subject.content}
+                </div>
+                <p class="text-center mt-12 italic text-gray-500 text-sm">Fin du ${subject.title}</p>
+            `;
+
+            // Trigger MathJax
+            if (window.MathJax) {
+                window.MathJax.typesetPromise([elContainer]);
+            }
+            
+            // On mobile, close menu after selection
+            if(window.innerWidth < 640) {
+                closeMenu();
+            }
+        };
+
+        function renderMenu() {
+            elSubjectList.innerHTML = '';
+            subjects.forEach(sub => {
+                const btn = document.createElement('button');
+                btn.className = 'subject-btn w-full text-left px-3 py-2 rounded text-sm transition flex justify-between items-center group';
+                btn.dataset.id = sub.id;
+                btn.onclick = () => loadExam(sub.id);
+                
+                const label = document.createElement('span');
+                label.innerText = sub.title;
+                
+                const editIcon = document.createElement('i');
+                editIcon.className = `fas fa-cog text-gray-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition ${isAdmin ? 'opacity-100' : ''}`;
+                editIcon.onclick = (e) => {
+                    e.stopPropagation();
+                    openEditor(sub.id);
+                };
+
+                btn.appendChild(label);
+                if(isAdmin) btn.appendChild(editIcon); // Only show gear if admin
+                
+                elSubjectList.appendChild(btn);
+            });
+        }
+
+        // --- Menu Logic ---
+
+        window.toggleMenu = () => {
+            const isOpen = elFabMenu.classList.contains('scale-100');
+            if (isOpen) {
+                closeMenu();
+            } else {
+                elFabMenu.classList.remove('scale-0');
+                elFabMenu.classList.add('scale-100');
+                elFabIcon.classList.remove('fa-bars');
+                elFabIcon.classList.add('fa-times');
+            }
+        };
+
+        function closeMenu() {
+            elFabMenu.classList.add('scale-0');
+            elFabMenu.classList.remove('scale-100');
+            elFabIcon.classList.add('fa-bars');
+            elFabIcon.classList.remove('fa-times');
+        }
+
+        // --- Admin & Security Logic ---
+
+        window.toggleAdminPanel = () => {
+            if (isAdmin) {
+                // If already admin, act as toggle off (logout)
+                isAdmin = false;
+                elBtnAdd.classList.add('hidden');
+                showToast("Mode Administrateur désactivé");
+                renderMenu();
+            } else {
+                elAuthModal.classList.remove('hidden');
+                document.getElementById('admin-pin').value = '';
+                document.getElementById('admin-pin').focus();
+            }
+        };
+
+        window.verifyPin = () => {
+            const pin = document.getElementById('admin-pin').value;
+            if (pin === "9090") {
+                isAdmin = true;
+                elAuthModal.classList.add('hidden');
+                elBtnAdd.classList.remove('hidden');
+                showToast("🔓 Mode Professeur Activé");
+                renderMenu(); // Re-render to show edit icons
+            } else {
+                showToast("Code PIN Incorrect", true);
+                document.getElementById('admin-pin').value = '';
+            }
+        };
+
+        // --- Editor Logic ---
+
+        let editingId = null;
+
+        window.openEditor = (id = null) => {
+            if (!isAdmin) {
+                toggleAdminPanel();
+                return;
+            }
+
+            editingId = id;
+            elEditorModal.classList.remove('hidden');
+            
+            const deleteBtn = document.getElementById('btn-delete');
+
+            if (id) {
+                // Edit mode
+                const sub = subjects.find(s => s.id === id);
+                elEditTitle.value = sub.title;
+                elEditContent.value = sub.content;
+                deleteBtn.classList.remove('hidden');
+            } else {
+                // Create mode
+                elEditTitle.value = "Nouveau Sujet";
+                insertTemplate(); // Pre-fill with template
+                deleteBtn.classList.add('hidden');
+            }
+            closeMenu();
+        };
+
+        window.insertTemplate = () => {
+            elEditContent.value = `
+<div class="mb-6">
+    <div class="flex justify-between items-center border-b border-black pb-1 mb-3">
+        <span class="font-bold text-lg">Exercice 1 : Titre</span>
+        <span class="font-bold">(5 pts)</span>
+    </div>
+    <ul class="list-disc pl-5 space-y-2">
+        <li>Calculer l'expression : $A = \\sqrt{25} + 3^2$</li>
+        <li>Résoudre l'équation : $$x^2 - 4x + 3 = 0$$</li>
+    </ul>
+</div>
+
+<div class="mb-6">
+    <div class="flex justify-between items-center border-b border-black pb-1 mb-3">
+        <span class="font-bold text-lg">Exercice 2 : Géométrie</span>
+        <span class="font-bold">(5 pts)</span>
+    </div>
+    <p>Soit $ABC$ un triangle rectangle en $A$.</p>
+</div>`;
+        };
+
+        window.closeModals = () => {
+            elAuthModal.classList.add('hidden');
+            elEditorModal.classList.add('hidden');
+            editingId = null;
+        };
+
+        window.saveSubject = async () => {
+            const title = elEditTitle.value;
+            const content = elEditContent.value;
+
+            if (!title || !content) {
+                showToast("Veuillez remplir tous les champs", true);
+                return;
+            }
+
+            showToast("Sauvegarde en cours...");
+
+            try {
+                if (editingId) {
+                    // Update
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME, editingId);
+                    await updateDoc(docRef, {
+                        title: title,
+                        content: content
+                    });
+                } else {
+                    // Create
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME), {
+                        title: title,
+                        content: content,
+                        createdAt: serverTimestamp()
+                    });
+                }
+                
+                showToast("Sujet sauvegardé !");
+                closeModals();
+            } catch (error) {
+                console.error(error);
+                showToast("Erreur lors de la sauvegarde", true);
+            }
+        };
+
+        window.deleteCurrentSubject = async () => {
+            if (!editingId) return;
+            if(!confirm("Êtes-vous sûr de vouloir supprimer ce sujet définitivement ?")) return;
+
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME, editingId));
+                showToast("Sujet supprimé");
+                closeModals();
+                // Reset view
+                if(subjects.length > 0) loadExam(subjects[0].id);
+            } catch (error) {
+                console.error(error);
+                showToast("Erreur lors de la suppression", true);
+            }
+        }
+
+        // --- Utilities ---
+
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-msg');
+            toastMsg.innerText = msg;
+            
+            if (isError) {
+                toast.classList.remove('bg-gray-800');
+                toast.classList.add('bg-red-600');
+            } else {
+                toast.classList.add('bg-gray-800');
+                toast.classList.remove('bg-red-600');
+            }
+
+            toast.classList.remove('opacity-0', 'translate-y-[-20px]');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-[-20px]');
+            }, 3000);
+        }
+
+        // Start
+        init();
+
     </script>
 </body>
 </html>
