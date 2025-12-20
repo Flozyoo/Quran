@@ -1,40 +1,280 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GPUTracker.live - Late 2025 Market Data</title>
+    <title>Contrôle Continu N°2 : Mathématiques</title>
     
-    <!-- React & ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    
-    <!-- Babel for JSX -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Recharts -->
-    <script src="https://unpkg.com/recharts/umd/Recharts.js"></script>
+    <!-- MathJax Configuration -->
+    <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      }
+    };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
     <style>
-        /* Custom scrollbar for a cyber-punk feel */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
+        /* Base Reset & Typography */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
-        ::-webkit-scrollbar-track {
-            background: #0f172a; 
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #334155; 
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #475569; 
-        }
+
         body {
+            background-color: #525659; /* Dark Grey Background for viewing */
+            font-family: "Times New Roman", Times, serif;
+            display: flex;
+            justify-content: center;
+            padding: 20px 0;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* A4 Page Simulation */
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            background-color: white;
+            padding: 20mm; /* Standard margins */
+            position: relative;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            overflow: hidden; /* Ensures the triangle stays within bounds */
+        }
+
+        /* 1. The Triangle Grading Box (Top Right Corner) */
+        .grading-triangle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 120px;
+            height: 120px;
+            border-left: 1px solid black;
+            border-bottom: 1px solid black;
+            background: white; /* Matches paper */
+            /* Using clip-path to strictly cut the triangle shape is cleaner, 
+               but CSS borders on a rotated div is the classic way to get the diagonal line.
+               Here is a clean implementation of the 'Corner' look: */
+            background: linear-gradient(to bottom left, white 50%, white 50%);
+        }
+
+        /* Using a pseudo-element for the diagonal line */
+        .grading-triangle::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 0 100px 100px 0;
+            border-color: transparent black transparent transparent;
+            /* Actually, a simpler approach for the 'Note' box often seen in exams:
+               Just a triangular overlay or a border. Let's do the specific diagonal line requirement. */
+        }
+        
+        /* Refined Triangle Approach */
+        .note-box {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 90px;
+            height: 90px;
+            /* Create the diagonal line */
+            background: linear-gradient(to bottom left, transparent 49%, black 50%, transparent 51%);
+            z-index: 10;
+        }
+
+        .note-text {
+            position: absolute;
+            top: 20px;
+            right: 5px;
+            font-weight: bold;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        /* 2. Header Section */
+        header {
+            border: 2px solid black;
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+            margin-right: 70px; /* Space for the triangle note area */
+        }
+
+        h1 {
+            font-size: 18pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+
+        .header-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12pt;
+            margin-top: 5px;
+            padding: 0 20px;
+        }
+
+        /* 3. Exercises Layout */
+        .exercise {
+            margin-bottom: 25px;
+        }
+
+        .exercise-title {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            text-decoration: underline;
+            margin-bottom: 10px;
+            font-size: 13pt;
+        }
+
+        .exercise-content ul {
+            list-style-type: disc;
+            margin-left: 25px;
+        }
+
+        .exercise-content li {
+            margin-bottom: 8px;
+            text-align: justify;
+        }
+
+        .sub-questions {
+            list-style-type: lower-alpha !important; /* a), b), c) */
+            margin-left: 20px;
+            margin-top: 5px;
+        }
+
+        /* Print Settings */
+        @media print {
+            body {
+                background: none;
+                padding: 0;
+            }
+            .page {
+                box-shadow: none;
+                width: 100%;
+                margin: 0;
+                border: none;
+                height: auto;
+            }
+            /* Ensure background graphics (like the grading triangle gradient) print */
+            * {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="page">
+        <!-- The Triangle Grading Box -->
+        <div class="note-box">
+            <div class="note-text">
+                Note<br>
+                / 20
+            </div>
+        </div>
+
+        <!-- Header -->
+        <header>
+            <h1>Contrôle Continu N°2 : Mathématiques</h1>
+            <div class="header-info">
+                <span>Niveau : T.C.S.F</span>
+                <span>Durée : 2 Heures</span>
+            </div>
+            <div class="header-info">
+                <span>Professeur : DALHI Hamid</span>
+                <span>Année : 2024/2025</span>
+            </div>
+        </header>
+
+        <!-- Exercice 1 -->
+        <div class="exercise">
+            <div class="exercise-title">
+                <span>Exercice 1 : Ensembles de Nombres et Identités</span>
+                <span>(4,5 pts)</span>
+            </div>
+            <div class="exercise-content">
+                <ul>
+                    <li>Calculer et simplifier : \( A = \left( \sqrt{4 - \sqrt{7}} + \sqrt{4 + \sqrt{7}} \right)^2 \).</li>
+                    <li>Rendre rationnel le dénominateur : \( \frac{2 + \sqrt{10}}{1 + \sqrt{10}} \).</li>
+                    <li>Démontrer que \( D = \frac{\sqrt{2}+1}{\sqrt{2}-1} - 2\sqrt{2} \) est un entier naturel.</li>
+                    <li>Factoriser : \( C = 25x^2 - 30x + 9 + (3x - 7)(5x - 3) - 10x + 6 \).</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Exercice 2 -->
+        <div class="exercise">
+            <div class="exercise-title">
+                <span>Exercice 2 : Ordre dans \(\mathbb{R}\) et Valeur Absolue</span>
+                <span>(6,5 pts)</span>
+            </div>
+            <div class="exercise-content">
+                <ul>
+                    <li>Simplifier : \( A = \sqrt{(1+\sqrt{2})^2} - \sqrt{(1-\sqrt{2})^2} \).</li>
+                    <li>Résoudre dans \(\mathbb{R}\) : \( |3x + 1| - 5 = 13 \) ; \( |4x + 3| = |3x - 5| \) ; \( |2x + 2| \geq 3 \).</li>
+                    <li>Soit \( B = \frac{1}{\sqrt{1+x^2}} \).
+                        <ul class="sub-questions">
+                            <li>Montrer que \( B - 1 = \frac{-x^2}{\sqrt{1+x^2} + 1 + x^2} \).</li>
+                            <li>En déduire que \( |B - 1| \leq \frac{1}{2}x^2 \).</li>
+                            <li>Donner une valeur approchée de \( \frac{1}{\sqrt{1,0004}} \) à \( 2.10^{-4} \) près.</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Exercice 3 -->
+        <div class="exercise">
+            <div class="exercise-title">
+                <span>Exercice 3 : Encadrements et Démonstrations</span>
+                <span>(5 pts)</span>
+            </div>
+            <div class="exercise-content">
+                <ul>
+                    <li>Soit \( -2 \leq x \leq 5 \) et \( -5 \leq y \leq -3 \). Encadrer : \( x - y \), \( xy \), et \( y^2 \).</li>
+                    <li>Soit \( a > 0 \).
+                        <ul class="sub-questions">
+                            <li>Montrer que \( 1 + a + \sqrt{1+2a} > 2 \).</li>
+                            <li>Montrer que \( \sqrt{1+2a} - (1+a) = \frac{-a^2}{1+a+\sqrt{1+2a}} \).</li>
+                            <li>En déduire que \( \frac{-a^2}{2} < \sqrt{1+2a} - 1 - a < 0 \).</li>
+                        </ul>
+                    </li>
+                    <li>Soient \( a+b=3 \) et \( a^2+b^2=5 \). Calculer \( ab \) et \( a^4+b^4 \).</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Exercice 4 -->
+        <div class="exercise">
+            <div class="exercise-title">
+                <span>Exercice 4 : Géométrie Analytique</span>
+                <span>(4 pts)</span>
+            </div>
+            <div class="exercise-content">
+                Soient \( A(0, 3) \), \( B(1, 2) \) et \( C(3, -1) \).
+                <ul>
+                    <li>Montrer que \( A, B, C \) ne sont pas alignés.</li>
+                    <li>Équation cartésienne de \( (AB) \).</li>
+                    <li>Soit \( (D): \{ x = -3k, y = 1 + k \} \). Donner l'équation de \( (\Delta) \) passant par \( C \) et parallèle à \( (D) \).</li>
+                    <li>Intersection de \( (D_1): x - y + 2 = 0 \) et \( (D_2): x + 3y - 1 = 0 \).</li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>        body {
             background-color: #0b0f19;
         }
     </style>
