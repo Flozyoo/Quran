@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hub de Contrôles : Mathématiques</title>
+    <title>Math Hub Pro - Administration</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- PDF Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <script>
     window.MathJax = {
@@ -17,100 +19,148 @@
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
     <style>
-        .paper { background-color: white; width: 100%; max-width: 210mm; min-height: 297mm; margin: 0 auto; padding: 15mm; box-shadow: 0 0 15px rgba(0,0,0,0.2); }
-        @media print { body { background: white; padding: 0; } .no-print { display: none !important; } .paper { box-shadow: none; margin: 0; padding: 10mm; width: 100%; max-width: none; } }
-        @media (max-width: 640px) { .paper { padding: 15px; width: 100%; } }
-        .custom-scroll::-webkit-scrollbar { width: 6px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
+        .paper-outer { background-color: #1f2937; min-height: 100vh; padding: 40px 20px; }
+        .paper { 
+            background-color: white; 
+            width: 210mm; 
+            min-height: 297mm; 
+            margin: 0 auto; 
+            padding: 20mm; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); 
+            position: relative;
+        }
+        @media (max-width: 210mm) {
+            .paper { width: 100%; min-height: auto; padding: 15px; }
+            .paper-outer { padding: 10px; }
+        }
+        .formula-btn {
+            @apply bg-gray-700 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-mono transition-colors;
+        }
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background-color: #3b82f6; border-radius: 10px; }
     </style>
 </head>
-<body class="bg-gray-800 font-serif text-gray-900 min-h-screen flex flex-col items-center py-4 sm:py-8">
+<body class="bg-gray-900 text-gray-100 font-sans">
 
-    <!-- LOADER -->
-    <div id="loader" class="fixed inset-0 bg-gray-900 z-50 flex items-center justify-center text-white">
-        <div class="text-center">
-            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4 mx-auto"></div>
-            <p>Connexion à Math-Hub Cloud...</p>
+    <!-- Loading -->
+    <div id="loader" class="fixed inset-0 bg-gray-900 z-[100] flex items-center justify-center">
+        <div class="flex flex-col items-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-blue-500 mb-4"></div>
+            <p class="text-blue-500 font-bold tracking-widest uppercase text-xs">Initialisation du Cloud</p>
         </div>
     </div>
 
-    <!-- MAIN PAPER -->
-    <div id="exam-container" class="paper hidden"></div>
-
-    <!-- EMPTY STATE -->
-    <div id="empty-state" class="hidden text-white text-center mt-20">
-        <i class="fas fa-folder-open text-6xl mb-4 text-gray-500"></i>
-        <p class="text-xl">Aucun sujet trouvé.</p>
-        <button onclick="toggleAdminPanel()" class="mt-4 text-blue-400 hover:underline">Accès Professeur</button>
+    <!-- Main View -->
+    <div class="paper-outer">
+        <div id="exam-render" class="paper text-gray-900 hidden" ondblclick="triggerAuth()">
+            <!-- Exam content injected here -->
+        </div>
+        
+        <div id="empty-state" class="text-center py-20 hidden" ondblclick="triggerAuth()">
+            <i class="fas fa-microscope text-6xl text-gray-700 mb-4"></i>
+            <p class="text-gray-500">Aucun sujet dans la base de données.</p>
+        </div>
     </div>
 
-    <!-- FAB MENU -->
-    <div class="fixed bottom-6 right-6 z-40 no-print flex flex-col items-end gap-3">
-        <div id="fab-menu" class="bg-white rounded-lg shadow-xl p-2 w-64 transform scale-0 origin-bottom-right transition-transform duration-200 mb-2 flex flex-col overflow-hidden">
-            <div class="p-2 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t">
-                <span class="font-bold text-gray-700 text-sm">Sujets Enregistrés</span>
-                <div class="flex gap-2">
-                    <button onclick="window.print()" class="text-gray-500 hover:text-green-600"><i class="fas fa-print"></i></button>
-                    <button onclick="toggleAdminPanel()" id="admin-lock-btn" class="text-gray-400"><i class="fas fa-lock"></i></button>
-                </div>
+    <!-- Floating UI -->
+    <div class="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3 no-print">
+        <div id="fab-menu" class="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl p-4 w-72 transform scale-0 origin-bottom-right transition-all duration-300 mb-2">
+            <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
+                <h3 class="font-bold text-blue-400">Bibliothèque</h3>
+                <button onclick="downloadPDF()" class="text-gray-400 hover:text-green-400"><i class="fas fa-file-pdf"></i></button>
             </div>
-            <div id="subject-list" class="max-h-60 overflow-y-auto custom-scroll p-1 space-y-1"></div>
-            <button id="btn-add-new" class="hidden w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded text-sm font-bold flex items-center justify-center gap-2 transition" onclick="openEditor()">
-                <i class="fas fa-plus"></i> Nouveau Sujet
+            <div id="subject-list" class="max-h-80 overflow-y-auto custom-scroll space-y-2"></div>
+            <button id="admin-add-btn" class="hidden w-full mt-4 bg-blue-600 hover:bg-blue-700 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2" onclick="openEditor()">
+                <i class="fas fa-plus-circle"></i> Nouveau Sujet
             </button>
         </div>
-        <button onclick="toggleMenu()" class="bg-blue-600 hover:bg-blue-700 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-xl transition-transform hover:scale-105">
-            <i class="fas fa-bars" id="fab-icon"></i>
+        <button onclick="toggleMenu()" class="bg-blue-600 hover:bg-blue-500 w-16 h-16 rounded-full shadow-2xl flex items-center justify-center text-2xl transition-transform hover:scale-110">
+            <i class="fas fa-folder-tree" id="fab-icon"></i>
         </button>
     </div>
 
-    <!-- MODAL AUTH -->
-    <div id="auth-modal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center px-4">
-        <div class="bg-white rounded-xl p-6 w-full max-w-sm shadow-2xl">
-            <h3 class="text-lg font-bold mb-4 text-center">Authentification Professeur</h3>
-            <input type="password" id="admin-pin" placeholder="PIN" class="w-full border p-3 rounded mb-4 text-center text-2xl tracking-[1em] focus:ring-2 focus:ring-blue-500 outline-none">
-            <div class="flex gap-2">
-                <button onclick="closeModals()" class="flex-1 bg-gray-100 py-2 rounded">Annuler</button>
-                <button onclick="verifyPin()" class="flex-1 bg-blue-600 text-white py-2 rounded font-bold">Valider</button>
+    <!-- Secret Auth Modal -->
+    <div id="auth-modal" class="fixed inset-0 bg-black/95 z-[110] hidden flex items-center justify-center">
+        <div class="w-full max-w-xs text-center">
+            <input type="password" id="admin-pin" class="bg-transparent border-b-2 border-gray-700 text-white text-5xl text-center w-full outline-none focus:border-blue-500 transition-all py-4 tracking-[0.5em]" placeholder="000000">
+            <p class="text-gray-600 mt-4 uppercase text-[10px] tracking-widest">Mode Administration</p>
+            <div class="mt-8 flex gap-4">
+                <button onclick="closeModals()" class="flex-1 text-gray-500">Fermer</button>
+                <button onclick="verifyPin()" class="flex-1 bg-blue-600 py-2 rounded-lg font-bold">Entrer</button>
             </div>
         </div>
     </div>
 
-    <!-- EDITOR MODAL -->
-    <div id="editor-modal" class="fixed inset-0 bg-white z-50 hidden flex flex-col">
-        <div class="bg-gray-800 text-white p-4 flex justify-between items-center">
-            <h3 class="font-bold">Éditeur de Sujet</h3>
+    <!-- Advanced Editor -->
+    <div id="editor-modal" class="fixed inset-0 bg-gray-900 z-[120] hidden flex flex-col">
+        <div class="p-4 border-b border-gray-800 flex justify-between items-center bg-gray-900">
+            <div class="flex items-center gap-4">
+                <div class="bg-blue-600 h-8 w-8 rounded flex items-center justify-center"><i class="fas fa-pen-nib"></i></div>
+                <h2 class="font-bold hidden md:block">Configuration de l'Épreuve</h2>
+            </div>
             <div class="flex gap-4">
-                <button onclick="deleteCurrentSubject()" id="btn-delete" class="text-red-400 text-sm font-bold hidden"><i class="fas fa-trash"></i></button>
-                <button onclick="closeModals()" class="text-gray-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+                <button onclick="deleteCurrent()" id="btn-delete" class="text-red-500 hidden px-4"><i class="fas fa-trash"></i></button>
+                <button onclick="closeModals()" class="bg-gray-800 text-white px-4 py-2 rounded-lg">Fermer</button>
             </div>
         </div>
+
         <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
-            <div class="w-full md:w-1/2 p-4 flex flex-col border-r bg-gray-50 overflow-y-auto">
-                <input type="text" id="edit-title" class="w-full border p-2 rounded mb-4 font-bold" placeholder="Titre de l'épreuve">
-                <div class="flex justify-between items-center mb-1">
-                    <label class="text-xs font-bold text-gray-500 uppercase">Contenu (LaTeX supporté)</label>
-                    <button onclick="insertTemplate()" class="text-blue-600 text-xs hover:underline">Charger modèle</button>
+            <!-- Left Side: Config & Editor -->
+            <div class="w-full md:w-1/2 p-4 flex flex-col gap-4 overflow-y-auto custom-scroll border-r border-gray-800">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="flex flex-col">
+                        <label class="text-[10px] uppercase text-gray-500 font-bold mb-1">Titre de l'examen</label>
+                        <input type="text" id="edit-title" class="bg-gray-800 border-0 p-3 rounded-lg text-sm" placeholder="Ex: Contrôle N°1">
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="text-[10px] uppercase text-gray-500 font-bold mb-1">Niveau / Grade</label>
+                        <select id="edit-level" class="bg-gray-800 border-0 p-3 rounded-lg text-sm">
+                            <option value="Tronc Commun">Tronc Commun</option>
+                            <option value="1ère Bac">1ère Bac</option>
+                            <option value="2ème Bac">2ème Bac</option>
+                            <option value="6ème Grade">6ème Grade</option>
+                            <option value="3ème Année Collège">3ème Année Collège</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="text-[10px] uppercase text-gray-500 font-bold mb-1">Nom du Professeur</label>
+                        <input type="text" id="edit-prof" class="bg-gray-800 border-0 p-3 rounded-lg text-sm" placeholder="Prof. Hamid">
+                    </div>
+                    <div class="flex flex-col">
+                        <label class="text-[10px] uppercase text-gray-500 font-bold mb-1">Durée</label>
+                        <input type="text" id="edit-time" class="bg-gray-800 border-0 p-3 rounded-lg text-sm" placeholder="2 Heures">
+                    </div>
                 </div>
-                <textarea id="edit-content" class="flex-1 w-full border p-2 rounded font-mono text-sm min-h-[300px]" placeholder="Utilisez $...$ pour les formules mathématiques"></textarea>
+
+                <div class="flex flex-col flex-1 mt-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-[10px] uppercase text-gray-500 font-bold">Contenu (LaTeX)</label>
+                        <div class="flex gap-1 flex-wrap justify-end" id="toolbar">
+                            <!-- JS will inject buttons -->
+                        </div>
+                    </div>
+                    <textarea id="edit-content" class="flex-1 bg-gray-950 border border-gray-800 p-4 font-mono text-sm rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-blue-100" placeholder="Insérez vos exercices ici..."></textarea>
+                </div>
             </div>
-            <div class="hidden md:block w-1/2 bg-gray-200 p-4 overflow-y-auto">
-                <div class="bg-white shadow p-8 min-h-full" id="live-preview"></div>
+
+            <!-- Right Side: Real-time Render -->
+            <div class="hidden md:block w-1/2 p-8 bg-gray-950 overflow-y-auto custom-scroll">
+                <div id="live-preview" class="paper text-gray-900 scale-[0.85] origin-top"></div>
             </div>
         </div>
-        <div class="p-4 bg-gray-100 flex justify-end">
-            <button onclick="saveSubject()" class="bg-green-600 hover:bg-green-700 text-white px-12 py-3 rounded-lg font-bold shadow-lg transition">PUBLIER L'EXAMEN</button>
+
+        <div class="p-4 bg-gray-900 border-t border-gray-800 flex justify-end">
+            <button onclick="saveExam()" class="bg-blue-600 hover:bg-blue-700 text-white px-10 py-3 rounded-xl font-bold shadow-xl transition-all">PUBLIER SUR LE HUB</button>
         </div>
     </div>
 
-    <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl z-[60] opacity-0 transition-opacity pointer-events-none"></div>
+    <div id="toast" class="fixed top-8 left-1/2 -translate-x-1/2 px-8 py-3 rounded-full bg-blue-600 text-white font-bold shadow-2xl opacity-0 transition-all z-[200]"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        // CONFIGURATION CONNECTÉE
         const firebaseConfig = {
             apiKey: "AIzaSyCWUIfZWinb7m5-gDaDjDsjgezxMFCkjzs",
             authDomain: "math-hub-832fb.firebaseapp.com",
@@ -124,137 +174,244 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = 'math-hub-v1';
+        const appId = 'math-hub-pro-v1';
 
-        let subjects = [];
-        let currentSubjectId = null;
-        let isAdmin = false;
+        let exams = [];
+        let currentId = null;
+        let isTeacher = false;
         let user = null;
 
-        const elLoader = document.getElementById('loader');
-        const elContainer = document.getElementById('exam-container');
-        const elEmpty = document.getElementById('empty-state');
-        const elSubjectList = document.getElementById('subject-list');
-        const elEditContent = document.getElementById('edit-content');
-        const elLivePreview = document.getElementById('live-preview');
+        // Toolbar Setup
+        const tools = [
+            { label: 'Exo', code: '<div class="mb-6">\n<h3 class="font-bold border-b border-black mb-2 flex justify-between">\n<span>Exercice X</span> <span>(0 pts)</span>\n</h3>\nContenu...\n</div>' },
+            { label: 'Frac', code: '$\\frac{num}{den}$' },
+            { label: 'Racine', code: '$\\sqrt{x}$' },
+            { label: 'Puissance', code: '$x^{n}$' },
+            { label: 'Vecteur', code: '$\\vec{AB}$' },
+            { label: 'Infini', code: '$+\\infty$' },
+            { label: 'Gros Maths', code: '$$ x = \\frac{-b \\pm \\sqrt{\\Delta}}{2a} $$' }
+        ];
 
         async function init() {
+            const tb = document.getElementById('toolbar');
+            tools.forEach(t => {
+                const b = document.createElement('button');
+                b.className = 'bg-gray-800 hover:bg-blue-600 text-[10px] px-2 py-1 rounded text-white transition-colors';
+                b.innerText = t.label;
+                b.onclick = () => insertAtCursor(t.code);
+                tb.appendChild(b);
+            });
+
             try {
-                // Règle 3 : Auth d'abord
                 await signInAnonymously(auth);
                 onAuthStateChanged(auth, (u) => {
                     user = u;
-                    if (user) startListener();
+                    if (user) listen();
                 });
-            } catch (e) { 
-                console.error(e);
-                showToast("Erreur d'authentification Firebase", true); 
-            }
+            } catch (e) { showToast("Erreur Cloud", true); }
         }
 
-        function startListener() {
-            // Règle 1 : Chemins stricts
+        function listen() {
             const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'exams'), orderBy('createdAt', 'desc'));
-            
-            onSnapshot(q, (snapshot) => {
-                subjects = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            onSnapshot(q, (snap) => {
+                exams = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                 renderMenu();
-                
-                if (subjects.length > 0) {
-                    elEmpty.classList.add('hidden');
-                    elContainer.classList.remove('hidden');
-                    if (!currentSubjectId) loadExam(subjects[0].id);
+                if (exams.length > 0) {
+                    document.getElementById('empty-state').classList.add('hidden');
+                    document.getElementById('exam-render').classList.remove('hidden');
+                    if (!currentId) renderExam(exams[0].id);
                 } else {
-                    elEmpty.classList.remove('hidden');
-                    elContainer.classList.add('hidden');
+                    document.getElementById('empty-state').classList.remove('hidden');
+                    document.getElementById('exam-render').classList.add('hidden');
                 }
-                elLoader.classList.add('hidden');
-            }, (err) => { 
-                console.error(err);
-                showToast("Erreur: Vérifiez vos règles Firestore", true); 
+                document.getElementById('loader').classList.add('hidden');
             });
         }
 
-        window.toggleMenu = () => {
-            const menu = document.getElementById('fab-menu');
-            const icon = document.getElementById('fab-icon');
-            const isOpen = menu.classList.contains('scale-100');
-            menu.classList.toggle('scale-100', !isOpen);
-            menu.classList.toggle('scale-0', isOpen);
-            icon.className = isOpen ? 'fas fa-bars' : 'fas fa-times';
-        };
+        window.renderExam = (id) => {
+            currentId = id;
+            const ex = exams.find(e => e.id === id);
+            if (!ex) return;
 
-        window.loadExam = (id) => {
-            currentSubjectId = id;
-            const sub = subjects.find(s => s.id === id);
-            if (!sub) return;
-
-            elContainer.innerHTML = `
-                <div class="border-2 border-black p-4 text-center mb-8">
-                    <h1 class="text-2xl font-bold uppercase mb-2">${sub.title}</h1>
-                    <div class="grid grid-cols-2 text-left text-sm gap-2">
-                        <span><strong>Niveau:</strong> Tronc Commun Sc</span>
-                        <span><strong>Durée:</strong> 2 Heures</span>
-                        <span><strong>Professeur:</strong> Prof. Hamid</span>
-                        <span><strong>Session:</strong> 2024/2025</span>
+            const html = `
+                <div class="border-4 border-black p-4 mb-10">
+                    <div class="flex justify-between items-center border-b-2 border-black pb-4 mb-4">
+                        <div class="text-left">
+                            <p class="font-bold text-lg uppercase">${ex.level || 'Tronc Commun'}</p>
+                            <p class="text-sm">Lycée : Al Aaroui</p>
+                        </div>
+                        <div class="text-center bg-black text-white px-6 py-2">
+                            <h1 class="text-2xl font-black">${ex.title}</h1>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold">${ex.prof || 'Prof. Hamid'}</p>
+                            <p class="text-sm">Durée: ${ex.time || '2h'}</p>
+                        </div>
+                    </div>
+                    <div class="flex justify-between text-xs font-bold italic mb-2">
+                        <span>Année Scolaire : 2024/2025</span>
+                        <span>Matière : Mathématiques</span>
                     </div>
                 </div>
-                <div class="exam-content text-lg leading-relaxed">${sub.content}</div>
-                <p class="text-center mt-12 italic text-gray-400 border-t pt-4">Fin de l'épreuve - Bonne chance</p>
+                <div class="exam-body text-lg">${ex.content}</div>
+                <div class="mt-16 text-center border-t border-dotted pt-4 text-gray-400 text-xs no-print">
+                    Document généré numériquement via Math Hub Pro
+                </div>
             `;
-            
-            if (window.MathJax) window.MathJax.typesetPromise([elContainer]);
+            document.getElementById('exam-render').innerHTML = html;
+            if (window.MathJax) window.MathJax.typesetPromise([document.getElementById('exam-render')]);
             renderMenu();
         };
 
         window.renderMenu = () => {
-            elSubjectList.innerHTML = '';
-            subjects.forEach(s => {
-                const active = s.id === currentSubjectId;
-                const btn = document.createElement('div');
-                btn.className = `flex items-center justify-between p-2 rounded cursor-pointer transition ${active ? 'bg-blue-100 text-blue-800 font-bold' : 'hover:bg-gray-100'}`;
-                btn.innerHTML = `
-                    <span class="truncate flex-1" onclick="loadExam('${s.id}')">${s.title}</span>
-                    ${isAdmin ? `<button onclick="openEditor('${s.id}')" class="ml-2 text-blue-500"><i class="fas fa-edit"></i></button>` : ''}
-                `;
-                elSubjectList.appendChild(btn);
+            const list = document.getElementById('subject-list');
+            list.innerHTML = '';
+            
+            // Group by level
+            const groups = {};
+            exams.forEach(e => {
+                if (!groups[e.level]) groups[e.level] = [];
+                groups[e.level].push(e);
             });
+
+            for (const level in groups) {
+                const header = document.createElement('div');
+                header.className = 'text-[9px] uppercase text-gray-500 font-bold mt-4 mb-1 tracking-widest';
+                header.innerText = level || 'Inconnu';
+                list.appendChild(header);
+
+                groups[level].forEach(e => {
+                    const active = e.id === currentId;
+                    const row = document.createElement('div');
+                    row.className = `flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${active ? 'bg-blue-600/20 text-blue-400 font-bold' : 'hover:bg-gray-700/50 text-gray-400'}`;
+                    row.innerHTML = `
+                        <span class="truncate flex-1" onclick="renderExam('${e.id}')">${e.title}</span>
+                        ${isTeacher ? `<button onclick="openEditor('${e.id}')" class="ml-2 text-blue-500"><i class="fas fa-edit"></i></button>` : ''}
+                    `;
+                    list.appendChild(row);
+                });
+            }
         };
 
-        window.toggleAdminPanel = () => {
-            if (isAdmin) {
-                isAdmin = false;
-                document.getElementById('btn-add-new').classList.add('hidden');
-                document.getElementById('admin-lock-btn').innerHTML = '<i class="fas fa-lock"></i>';
+        window.downloadPDF = () => {
+            const element = document.getElementById('exam-render');
+            const ex = exams.find(e => e.id === currentId);
+            const opt = {
+                margin: 0,
+                filename: `${ex.title}_${ex.level}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save();
+        };
+
+        window.triggerAuth = () => {
+            if (isTeacher) {
+                isTeacher = false;
+                document.getElementById('admin-add-btn').classList.add('hidden');
                 renderMenu();
-                showToast("Déconnecté");
+                showToast("Mode Étudiant");
             } else {
                 document.getElementById('auth-modal').classList.remove('hidden');
+                document.getElementById('admin-pin').focus();
             }
         };
 
         window.verifyPin = () => {
-            if (document.getElementById('admin-pin').value === "9090") {
-                isAdmin = true;
+            if (document.getElementById('admin-pin').value === "800800") {
+                isTeacher = true;
                 document.getElementById('auth-modal').classList.add('hidden');
-                document.getElementById('btn-add-new').classList.remove('hidden');
-                document.getElementById('admin-lock-btn').innerHTML = '<i class="fas fa-unlock text-blue-600"></i>';
+                document.getElementById('admin-add-btn').classList.remove('hidden');
                 renderMenu();
-                showToast("Accès autorisé");
+                showToast("Accès Dashboard Autorisé");
                 document.getElementById('admin-pin').value = '';
             } else {
                 showToast("PIN Incorrect", true);
+                document.getElementById('admin-pin').value = '';
             }
         };
 
         window.openEditor = (id = null) => {
-            currentSubjectId = id;
-            const sub = id ? subjects.find(s => s.id === id) : { title: '', content: '' };
-            document.getElementById('edit-title').value = sub.title;
-            elEditContent.value = sub.content;
+            currentId = id;
+            const ex = id ? exams.find(e => e.id === id) : { title: '', level: 'Tronc Commun', prof: 'Prof. Hamid', time: '2 Heures', content: '' };
+            document.getElementById('edit-title').value = ex.title;
+            document.getElementById('edit-level').value = ex.level;
+            document.getElementById('edit-prof').value = ex.prof;
+            document.getElementById('edit-time').value = ex.time;
+            document.getElementById('edit-content').value = ex.content;
             document.getElementById('btn-delete').classList.toggle('hidden', !id);
             document.getElementById('editor-modal').classList.remove('hidden');
-            updatePreview();
+            livePreview();
+        };
+
+        function livePreview() {
+            const preview = document.getElementById('live-preview');
+            const content = document.getElementById('edit-content').value;
+            const title = document.getElementById('edit-title').value || 'Examen';
+            const level = document.getElementById('edit-level').value;
+            const prof = document.getElementById('edit-prof').value;
+            const time = document.getElementById('edit-time').value;
+
+            preview.innerHTML = `
+                <div class="border-4 border-black p-4 mb-6">
+                    <div class="flex justify-between items-center border-b-2 border-black pb-2 mb-2">
+                        <div class="text-[10px] font-bold">
+                            <p>${level}</p>
+                            <p>Lycée Al Aaroui</p>
+                        </div>
+                        <div class="bg-black text-white px-4 py-1">
+                            <h1 class="text-sm font-black">${title}</h1>
+                        </div>
+                        <div class="text-[10px] text-right font-bold">
+                            <p>${prof}</p>
+                            <p>${time}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-xs">${content}</div>
+            `;
+            if (window.MathJax) window.MathJax.typesetPromise([preview]);
+        }
+        document.getElementById('edit-content').addEventListener('input', livePreview);
+
+        window.saveExam = async () => {
+            if (!isTeacher) return;
+            const data = {
+                title: document.getElementById('edit-title').value,
+                level: document.getElementById('edit-level').value,
+                prof: document.getElementById('edit-prof').value,
+                time: document.getElementById('edit-time').value,
+                content: document.getElementById('edit-content').value,
+                updatedAt: serverTimestamp()
+            };
+
+            try {
+                if (currentId && exams.find(e => e.id === currentId)) {
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'exams', currentId), data);
+                } else {
+                    data.createdAt = serverTimestamp();
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'exams'), data);
+                }
+                showToast("Modifications Cloud Enregistrées");
+                closeModals();
+            } catch (e) { showToast("Erreur Firestore", true); }
+        };
+
+        window.deleteCurrent = async () => {
+            if (!currentId || !confirm("Supprimer définitivement ?")) return;
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'exams', currentId));
+            showToast("Document Supprimé");
+            closeModals();
+        };
+
+        window.toggleMenu = () => {
+            const m = document.getElementById('fab-menu');
+            const i = document.getElementById('fab-icon');
+            const open = m.classList.contains('scale-100');
+            m.classList.toggle('scale-100', !open);
+            m.classList.toggle('scale-0', open);
+            i.className = open ? 'fas fa-folder-tree' : 'fas fa-times';
         };
 
         window.closeModals = () => {
@@ -262,64 +419,21 @@
             document.getElementById('editor-modal').classList.add('hidden');
         };
 
-        function updatePreview() {
-            elLivePreview.innerHTML = elEditContent.value;
-            if (window.MathJax) window.MathJax.typesetPromise([elLivePreview]);
+        function insertAtCursor(text) {
+            const area = document.getElementById('edit-content');
+            const start = area.selectionStart;
+            const end = area.selectionEnd;
+            area.value = area.value.substring(0, start) + text + area.value.substring(end);
+            area.focus();
+            area.selectionStart = area.selectionEnd = start + text.length;
+            livePreview();
         }
-        elEditContent.addEventListener('input', updatePreview);
-
-        window.insertTemplate = () => {
-            elEditContent.value = `<div class="mb-6">
-  <h3 class="font-bold border-b-2 border-black mb-2 flex justify-between">
-    <span>Exercice 1</span> <span>(5 pts)</span>
-  </h3>
-  <p>Soit l'expression $E = (x+3)^2 - 4$.</p>
-  <ul class="list-disc ml-8 mt-2">
-    <li>Développer et réduire $E$.</li>
-    <li>Calculer $E$ pour $x = \\sqrt{2}$.</li>
-    <li>Factoriser $E$.</li>
-  </ul>
-</div>`;
-            updatePreview();
-        };
-
-        window.saveSubject = async () => {
-            if (!user) return;
-            const data = {
-                title: document.getElementById('edit-title').value || "Sujet sans titre",
-                content: elEditContent.value,
-                updatedAt: serverTimestamp()
-            };
-
-            try {
-                if (currentSubjectId && subjects.find(s => s.id === currentSubjectId)) {
-                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'exams', currentSubjectId), data);
-                } else {
-                    data.createdAt = serverTimestamp();
-                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'exams'), data);
-                }
-                showToast("Enregistré avec succès !");
-                closeModals();
-            } catch (e) { showToast("Erreur d'écriture", true); }
-        };
-
-        window.deleteCurrentSubject = async () => {
-            if (!currentSubjectId || !confirm("Supprimer ce sujet définitivement ?")) return;
-            try {
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'exams', currentSubjectId));
-                showToast("Sujet supprimé");
-                currentSubjectId = null;
-                closeModals();
-            } catch (e) { showToast("Erreur de suppression", true); }
-        };
 
         function showToast(m, err = false) {
             const t = document.getElementById('toast');
             t.innerText = m;
-            t.classList.toggle('bg-red-600', err);
-            t.classList.toggle('bg-blue-600', !err);
-            t.style.opacity = '1';
-            setTimeout(() => t.style.opacity = '0', 3000);
+            t.className = `fixed top-8 left-1/2 -translate-x-1/2 px-8 py-3 rounded-full font-bold shadow-2xl transition-all z-[200] ${err ? 'bg-red-600' : 'bg-blue-600'} text-white opacity-100`;
+            setTimeout(() => t.className = t.className.replace('opacity-100', 'opacity-0'), 3000);
         }
 
         init();
