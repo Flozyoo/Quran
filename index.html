@@ -5,513 +5,324 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hub de Contrôles : Mathématiques</title>
     
-    <!-- Tailwind CSS for rapid styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- MathJax Configuration -->
     <script>
     window.MathJax = {
-      tex: {
-        inlineMath: [['$', '$'], ['\\(', '\\)']],
-        displayMath: [['$$', '$$']]
-      },
-      svg: {
-        fontCache: 'global'
-      }
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$']] },
+      svg: { fontCache: 'global' }
     };
     </script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
     <style>
-        /* A4 Paper Simulation */
-        .paper {
-            background-color: white;
-            width: 100%;
-            max-width: 210mm;
-            min-height: 297mm;
-            margin: 0 auto;
-            padding: 15mm;
-            box-shadow: 0 0 15px rgba(0,0,0,0.2);
-            position: relative;
-        }
-
-        /* Print adjustments */
-        @media print {
-            body { background: white; }
-            .no-print { display: none !important; }
-            .paper { box-shadow: none; margin: 0; padding: 10mm; width: 100%; max-width: none; }
-        }
-
-        /* Mobile adjustments */
-        @media (max-width: 640px) {
-            .paper { padding: 15px; width: 100%; min-height: 100vh; }
-        }
-
-        /* Transition effects */
-        .fade-enter { opacity: 0; }
-        .fade-enter-active { opacity: 1; transition: opacity 300ms; }
-        
-        /* Custom Scrollbar for Menu */
+        .paper { background-color: white; width: 100%; max-width: 210mm; min-height: 297mm; margin: 0 auto; padding: 15mm; box-shadow: 0 0 15px rgba(0,0,0,0.2); }
+        @media print { body { background: white; padding: 0; } .no-print { display: none !important; } .paper { box-shadow: none; margin: 0; padding: 10mm; width: 100%; max-width: none; } }
+        @media (max-width: 640px) { .paper { padding: 15px; width: 100%; } }
         .custom-scroll::-webkit-scrollbar { width: 6px; }
         .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
     </style>
 </head>
-<body class="bg-gray-600 font-serif text-gray-900 min-h-screen flex flex-col items-center py-4 sm:py-8">
+<body class="bg-gray-800 font-serif text-gray-900 min-h-screen flex flex-col items-center py-4 sm:py-8">
 
-    <!-- LOADING SPINNER -->
-    <div id="loader" class="fixed inset-0 bg-gray-800 bg-opacity-90 z-50 flex items-center justify-center text-white">
+    <!-- LOADER -->
+    <div id="loader" class="fixed inset-0 bg-gray-900 z-50 flex items-center justify-center text-white">
         <div class="text-center">
-            <i class="fas fa-circle-notch fa-spin text-4xl mb-4"></i>
-            <p>Chargement des sujets...</p>
+            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4 mx-auto"></div>
+            <p>Connexion à Math-Hub Cloud...</p>
         </div>
     </div>
 
-    <!-- MAIN EXAM CONTAINER -->
-    <div id="exam-container" class="paper hidden">
-        <!-- Content injected via JS -->
-    </div>
+    <!-- MAIN PAPER -->
+    <div id="exam-container" class="paper hidden"></div>
 
     <!-- EMPTY STATE -->
     <div id="empty-state" class="hidden text-white text-center mt-20">
-        <i class="fas fa-folder-open text-6xl mb-4 text-gray-400"></i>
-        <p class="text-xl">Aucun sujet disponible.</p>
-        <p class="text-sm text-gray-400">Connectez-vous en admin pour en créer un.</p>
+        <i class="fas fa-folder-open text-6xl mb-4 text-gray-500"></i>
+        <p class="text-xl">Aucun sujet trouvé.</p>
+        <button onclick="toggleAdminPanel()" class="mt-4 text-blue-400 hover:underline">Accès Professeur</button>
     </div>
 
-    <!-- FAB MENU (Floating Action Button) -->
+    <!-- FAB MENU -->
     <div class="fixed bottom-6 right-6 z-40 no-print flex flex-col items-end gap-3">
-        
-        <!-- Menu List (Hidden by default) -->
-        <div id="fab-menu" class="bg-white rounded-lg shadow-xl p-2 w-64 transform scale-0 origin-bottom-right transition-transform duration-200 ease-out mb-2 max-h-[70vh] flex flex-col">
+        <div id="fab-menu" class="bg-white rounded-lg shadow-xl p-2 w-64 transform scale-0 origin-bottom-right transition-transform duration-200 mb-2 flex flex-col overflow-hidden">
             <div class="p-2 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t">
-                <span class="font-bold text-gray-700 text-sm">Sujets Disponibles</span>
-                <button onclick="toggleAdminPanel()" class="text-gray-400 hover:text-blue-600 transition p-1" title="Administration">
-                    <i class="fas fa-lock"></i>
-                </button>
+                <span class="font-bold text-gray-700 text-sm">Sujets Enregistrés</span>
+                <div class="flex gap-2">
+                    <button onclick="window.print()" class="text-gray-500 hover:text-green-600"><i class="fas fa-print"></i></button>
+                    <button onclick="toggleAdminPanel()" id="admin-lock-btn" class="text-gray-400"><i class="fas fa-lock"></i></button>
+                </div>
             </div>
-            
-            <div id="subject-list" class="flex-1 overflow-y-auto custom-scroll p-1 space-y-1">
-                <!-- List items injected here -->
-            </div>
-
-            <!-- Admin Add Button (Only visible if admin) -->
-            <button id="btn-add-new" class="hidden w-full mt-2 bg-green-600 hover:bg-green-700 text-white py-2 rounded text-sm font-bold items-center justify-center gap-2 transition" onclick="openEditor()">
+            <div id="subject-list" class="max-h-60 overflow-y-auto custom-scroll p-1 space-y-1"></div>
+            <button id="btn-add-new" class="hidden w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded text-sm font-bold flex items-center justify-center gap-2 transition" onclick="openEditor()">
                 <i class="fas fa-plus"></i> Nouveau Sujet
             </button>
         </div>
-
-        <!-- Main FAB Button -->
-        <button onclick="toggleMenu()" class="bg-blue-600 hover:bg-blue-700 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-xl transition-transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-blue-300">
+        <button onclick="toggleMenu()" class="bg-blue-600 hover:bg-blue-700 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-xl transition-transform hover:scale-105">
             <i class="fas fa-bars" id="fab-icon"></i>
         </button>
     </div>
 
-    <!-- ADMIN AUTH MODAL -->
-    <div id="auth-modal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden flex items-center justify-center px-4">
-        <div class="bg-white rounded-lg p-6 w-full max-w-sm shadow-2xl">
-            <h3 class="text-lg font-bold mb-4 text-center">Accès Professeur</h3>
-            <input type="password" id="admin-pin" placeholder="Code PIN (9090)" class="w-full border p-3 rounded mb-4 text-center text-lg tracking-widest focus:ring-2 focus:ring-blue-500 outline-none" inputmode="numeric">
+    <!-- MODAL AUTH -->
+    <div id="auth-modal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center px-4">
+        <div class="bg-white rounded-xl p-6 w-full max-w-sm shadow-2xl">
+            <h3 class="text-lg font-bold mb-4 text-center">Authentification Professeur</h3>
+            <input type="password" id="admin-pin" placeholder="PIN" class="w-full border p-3 rounded mb-4 text-center text-2xl tracking-[1em] focus:ring-2 focus:ring-blue-500 outline-none">
             <div class="flex gap-2">
-                <button onclick="closeModals()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded transition">Annuler</button>
-                <button onclick="verifyPin()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded transition font-bold">Entrer</button>
+                <button onclick="closeModals()" class="flex-1 bg-gray-100 py-2 rounded">Annuler</button>
+                <button onclick="verifyPin()" class="flex-1 bg-blue-600 text-white py-2 rounded font-bold">Valider</button>
             </div>
         </div>
     </div>
 
     <!-- EDITOR MODAL -->
-    <div id="editor-modal" class="fixed inset-0 bg-black bg-opacity-90 z-50 hidden flex flex-col">
-        <div class="bg-gray-800 text-white p-4 flex justify-between items-center shadow-md">
-            <h3 class="font-bold text-lg"><i class="fas fa-edit mr-2"></i>Éditeur de Sujet</h3>
-            <button onclick="closeModals()" class="text-gray-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
-        </div>
-        
-        <div class="flex-1 flex flex-col md:flex-row bg-white overflow-hidden">
-            <!-- Left: Inputs -->
-            <div class="w-full md:w-1/2 p-4 flex flex-col border-r border-gray-200 bg-gray-50">
-                <div class="mb-4">
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Titre du Sujet</label>
-                    <input type="text" id="edit-title" class="w-full border border-gray-300 p-2 rounded focus:border-blue-500 outline-none" placeholder="Ex: Sujet B : Analyse">
-                </div>
-                
-                <div class="flex-1 flex flex-col">
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1 flex justify-between">
-                        <span>Code HTML (Corps du devoir)</span>
-                        <span class="text-xs font-normal normal-case text-blue-600 cursor-pointer hover:underline" onclick="insertTemplate()">Insérer Template</span>
-                    </label>
-                    <textarea id="edit-content" class="flex-1 w-full border border-gray-300 p-2 rounded font-mono text-sm focus:border-blue-500 outline-none resize-none" placeholder="<div class='exercise'>...</div>"></textarea>
-                    <p class="text-xs text-gray-500 mt-1">Utilisez $...$ pour les maths en ligne et $$...$$ pour les blocs.</p>
-                </div>
-            </div>
-
-            <!-- Right: Preview (Hidden on small mobile until toggled, but visible here for simplicity) -->
-            <div class="hidden md:block w-1/2 bg-gray-100 overflow-y-auto p-8 flex justify-center">
-                <div id="live-preview" class="bg-white shadow p-8 w-full min-h-[500px] text-sm transform scale-90 origin-top">
-                    <!-- Preview renders here -->
-                </div>
+    <div id="editor-modal" class="fixed inset-0 bg-white z-50 hidden flex flex-col">
+        <div class="bg-gray-800 text-white p-4 flex justify-between items-center">
+            <h3 class="font-bold">Éditeur de Sujet</h3>
+            <div class="flex gap-4">
+                <button onclick="deleteCurrentSubject()" id="btn-delete" class="text-red-400 text-sm font-bold hidden"><i class="fas fa-trash"></i></button>
+                <button onclick="closeModals()" class="text-gray-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
             </div>
         </div>
-
-        <div class="bg-gray-800 p-4 flex justify-between items-center">
-            <button onclick="deleteCurrentSubject()" id="btn-delete" class="text-red-400 hover:text-red-300 text-sm font-bold px-4">
-                <i class="fas fa-trash"></i> Supprimer
-            </button>
-            <div class="flex gap-3">
-                <button onclick="closeModals()" class="bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded transition">Annuler</button>
-                <button onclick="saveSubject()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded font-bold shadow-lg transition transform hover:scale-105">
-                    <i class="fas fa-save mr-2"></i> Publier
-                </button>
+        <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
+            <div class="w-full md:w-1/2 p-4 flex flex-col border-r bg-gray-50 overflow-y-auto">
+                <input type="text" id="edit-title" class="w-full border p-2 rounded mb-4 font-bold" placeholder="Titre de l'épreuve">
+                <div class="flex justify-between items-center mb-1">
+                    <label class="text-xs font-bold text-gray-500 uppercase">Contenu (LaTeX supporté)</label>
+                    <button onclick="insertTemplate()" class="text-blue-600 text-xs hover:underline">Charger modèle</button>
+                </div>
+                <textarea id="edit-content" class="flex-1 w-full border p-2 rounded font-mono text-sm min-h-[300px]" placeholder="Utilisez $...$ pour les formules mathématiques"></textarea>
             </div>
+            <div class="hidden md:block w-1/2 bg-gray-200 p-4 overflow-y-auto">
+                <div class="bg-white shadow p-8 min-h-full" id="live-preview"></div>
+            </div>
+        </div>
+        <div class="p-4 bg-gray-100 flex justify-end">
+            <button onclick="saveSubject()" class="bg-green-600 hover:bg-green-700 text-white px-12 py-3 rounded-lg font-bold shadow-lg transition">PUBLIER L'EXAMEN</button>
         </div>
     </div>
 
-    <!-- TOAST NOTIFICATION -->
-    <div id="toast" class="fixed top-5 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full shadow-2xl z-50 transition-all duration-300 opacity-0 translate-y-[-20px] pointer-events-none">
-        <span id="toast-msg">Notification</span>
-    </div>
+    <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl z-[60] opacity-0 transition-opacity pointer-events-none"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        // --- Configuration ---
-        const firebaseConfig = JSON.parse(__firebase_config);
+        // CONFIGURATION CONNECTÉE
+        const firebaseConfig = {
+            apiKey: "AIzaSyCWUIfZWinb7m5-gDaDjDsjgezxMFCkjzs",
+            authDomain: "math-hub-832fb.firebaseapp.com",
+            projectId: "math-hub-832fb",
+            storageBucket: "math-hub-832fb.firebasestorage.app",
+            messagingSenderId: "201853249740",
+            appId: "1:201853249740:web:f0ce27947e83687020ba69",
+            measurementId: "G-MEBTLZPD1P"
+        };
+
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = __app_id || 'default-math-app';
-        const COLLECTION_NAME = 'exams';
+        const appId = 'math-hub-v1';
 
-        // --- State ---
         let subjects = [];
         let currentSubjectId = null;
         let isAdmin = false;
-        let unsubscribe = null;
+        let user = null;
 
-        // --- DOM Elements ---
         const elLoader = document.getElementById('loader');
         const elContainer = document.getElementById('exam-container');
         const elEmpty = document.getElementById('empty-state');
-        const elFabMenu = document.getElementById('fab-menu');
         const elSubjectList = document.getElementById('subject-list');
-        const elFabIcon = document.getElementById('fab-icon');
-        const elAuthModal = document.getElementById('auth-modal');
-        const elEditorModal = document.getElementById('editor-modal');
-        const elEditTitle = document.getElementById('edit-title');
         const elEditContent = document.getElementById('edit-content');
-        const elBtnAdd = document.getElementById('btn-add-new');
+        const elLivePreview = document.getElementById('live-preview');
 
-        // --- Initialization ---
         async function init() {
             try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                     // For specialized environments
-                } else {
-                    await signInAnonymously(auth);
-                }
-
-                // Listen to Realtime Updates
-                const q = query(
-                    collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME), 
-                    orderBy('title') // Simple sort
-                );
-
-                unsubscribe = onSnapshot(q, (snapshot) => {
-                    subjects = [];
-                    snapshot.forEach(doc => {
-                        subjects.push({ id: doc.id, ...doc.data() });
-                    });
-                    
-                    renderMenu();
-                    
-                    // Logic to select first exam if none selected, or refresh current
-                    if (subjects.length > 0) {
-                        if (!currentSubjectId || !subjects.find(s => s.id === currentSubjectId)) {
-                            loadExam(subjects[0].id); // Load first by default
-                        } else {
-                            loadExam(currentSubjectId); // Refresh current
-                        }
-                        elEmpty.classList.add('hidden');
-                        elContainer.classList.remove('hidden');
-                    } else {
-                        elEmpty.classList.remove('hidden');
-                        elContainer.classList.add('hidden');
-                    }
-                    
-                    elLoader.classList.add('hidden');
-                }, (error) => {
-                    console.error("Error fetching data:", error);
-                    showToast("Erreur de connexion", true);
+                // Règle 3 : Auth d'abord
+                await signInAnonymously(auth);
+                onAuthStateChanged(auth, (u) => {
+                    user = u;
+                    if (user) startListener();
                 });
-
-            } catch (err) {
-                console.error("Init failed", err);
-                showToast("Erreur d'initialisation", true);
+            } catch (e) { 
+                console.error(e);
+                showToast("Erreur d'authentification Firebase", true); 
             }
         }
 
-        // --- Core UI Functions ---
+        function startListener() {
+            // Règle 1 : Chemins stricts
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'exams'), orderBy('createdAt', 'desc'));
+            
+            onSnapshot(q, (snapshot) => {
+                subjects = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderMenu();
+                
+                if (subjects.length > 0) {
+                    elEmpty.classList.add('hidden');
+                    elContainer.classList.remove('hidden');
+                    if (!currentSubjectId) loadExam(subjects[0].id);
+                } else {
+                    elEmpty.classList.remove('hidden');
+                    elContainer.classList.add('hidden');
+                }
+                elLoader.classList.add('hidden');
+            }, (err) => { 
+                console.error(err);
+                showToast("Erreur: Vérifiez vos règles Firestore", true); 
+            });
+        }
+
+        window.toggleMenu = () => {
+            const menu = document.getElementById('fab-menu');
+            const icon = document.getElementById('fab-icon');
+            const isOpen = menu.classList.contains('scale-100');
+            menu.classList.toggle('scale-100', !isOpen);
+            menu.classList.toggle('scale-0', isOpen);
+            icon.className = isOpen ? 'fas fa-bars' : 'fas fa-times';
+        };
 
         window.loadExam = (id) => {
             currentSubjectId = id;
-            const subject = subjects.find(s => s.id === id);
-            if (!subject) return;
+            const sub = subjects.find(s => s.id === id);
+            if (!sub) return;
 
-            // Highlight in menu
-            document.querySelectorAll('.subject-btn').forEach(btn => {
-                if(btn.dataset.id === id) {
-                    btn.classList.add('bg-blue-100', 'text-blue-700', 'font-bold');
-                    btn.classList.remove('text-gray-600', 'hover:bg-gray-100');
-                } else {
-                    btn.classList.remove('bg-blue-100', 'text-blue-700', 'font-bold');
-                    btn.classList.add('text-gray-600', 'hover:bg-gray-100');
-                }
-            });
-
-            // Inject HTML
             elContainer.innerHTML = `
-                <header class="border-2 border-black p-4 text-center mb-8">
-                    <h1 class="text-2xl font-bold uppercase mb-2">${subject.title}</h1>
-                    <div class="flex flex-wrap justify-between text-sm gap-2">
-                        <span class="w-full sm:w-auto text-left"><strong>Niveau :</strong> T.C.S.F</span>
-                        <span class="w-full sm:w-auto text-left"><strong>Durée :</strong> 120 Minutes</span>
-                        <span class="w-full sm:w-auto text-left"><strong>Professeur :</strong> DALHI Hamid</span>
-                        <span class="w-full sm:w-auto text-left"><strong>Année :</strong> 2024/2025</span>
+                <div class="border-2 border-black p-4 text-center mb-8">
+                    <h1 class="text-2xl font-bold uppercase mb-2">${sub.title}</h1>
+                    <div class="grid grid-cols-2 text-left text-sm gap-2">
+                        <span><strong>Niveau:</strong> Tronc Commun Sc</span>
+                        <span><strong>Durée:</strong> 2 Heures</span>
+                        <span><strong>Professeur:</strong> Prof. Hamid</span>
+                        <span><strong>Session:</strong> 2024/2025</span>
                     </div>
-                    <div class="mt-2 pt-1 border-t border-black w-full text-center font-bold">
-                        Note : ......... / 20
-                    </div>
-                </header>
-                <div class="content-body text-justify leading-relaxed">
-                    ${subject.content}
                 </div>
-                <p class="text-center mt-12 italic text-gray-500 text-sm">Fin du ${subject.title}</p>
+                <div class="exam-content text-lg leading-relaxed">${sub.content}</div>
+                <p class="text-center mt-12 italic text-gray-400 border-t pt-4">Fin de l'épreuve - Bonne chance</p>
             `;
-
-            // Trigger MathJax
-            if (window.MathJax) {
-                window.MathJax.typesetPromise([elContainer]);
-            }
             
-            // On mobile, close menu after selection
-            if(window.innerWidth < 640) {
-                closeMenu();
-            }
+            if (window.MathJax) window.MathJax.typesetPromise([elContainer]);
+            renderMenu();
         };
 
-        function renderMenu() {
+        window.renderMenu = () => {
             elSubjectList.innerHTML = '';
-            subjects.forEach(sub => {
-                const btn = document.createElement('button');
-                btn.className = 'subject-btn w-full text-left px-3 py-2 rounded text-sm transition flex justify-between items-center group';
-                btn.dataset.id = sub.id;
-                btn.onclick = () => loadExam(sub.id);
-                
-                const label = document.createElement('span');
-                label.innerText = sub.title;
-                
-                const editIcon = document.createElement('i');
-                editIcon.className = `fas fa-cog text-gray-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition ${isAdmin ? 'opacity-100' : ''}`;
-                editIcon.onclick = (e) => {
-                    e.stopPropagation();
-                    openEditor(sub.id);
-                };
-
-                btn.appendChild(label);
-                if(isAdmin) btn.appendChild(editIcon); // Only show gear if admin
-                
+            subjects.forEach(s => {
+                const active = s.id === currentSubjectId;
+                const btn = document.createElement('div');
+                btn.className = `flex items-center justify-between p-2 rounded cursor-pointer transition ${active ? 'bg-blue-100 text-blue-800 font-bold' : 'hover:bg-gray-100'}`;
+                btn.innerHTML = `
+                    <span class="truncate flex-1" onclick="loadExam('${s.id}')">${s.title}</span>
+                    ${isAdmin ? `<button onclick="openEditor('${s.id}')" class="ml-2 text-blue-500"><i class="fas fa-edit"></i></button>` : ''}
+                `;
                 elSubjectList.appendChild(btn);
             });
-        }
-
-        // --- Menu Logic ---
-
-        window.toggleMenu = () => {
-            const isOpen = elFabMenu.classList.contains('scale-100');
-            if (isOpen) {
-                closeMenu();
-            } else {
-                elFabMenu.classList.remove('scale-0');
-                elFabMenu.classList.add('scale-100');
-                elFabIcon.classList.remove('fa-bars');
-                elFabIcon.classList.add('fa-times');
-            }
         };
-
-        function closeMenu() {
-            elFabMenu.classList.add('scale-0');
-            elFabMenu.classList.remove('scale-100');
-            elFabIcon.classList.add('fa-bars');
-            elFabIcon.classList.remove('fa-times');
-        }
-
-        // --- Admin & Security Logic ---
 
         window.toggleAdminPanel = () => {
             if (isAdmin) {
-                // If already admin, act as toggle off (logout)
                 isAdmin = false;
-                elBtnAdd.classList.add('hidden');
-                showToast("Mode Administrateur désactivé");
+                document.getElementById('btn-add-new').classList.add('hidden');
+                document.getElementById('admin-lock-btn').innerHTML = '<i class="fas fa-lock"></i>';
                 renderMenu();
+                showToast("Déconnecté");
             } else {
-                elAuthModal.classList.remove('hidden');
-                document.getElementById('admin-pin').value = '';
-                document.getElementById('admin-pin').focus();
+                document.getElementById('auth-modal').classList.remove('hidden');
             }
         };
 
         window.verifyPin = () => {
-            const pin = document.getElementById('admin-pin').value;
-            if (pin === "9090") {
+            if (document.getElementById('admin-pin').value === "9090") {
                 isAdmin = true;
-                elAuthModal.classList.add('hidden');
-                elBtnAdd.classList.remove('hidden');
-                showToast("🔓 Mode Professeur Activé");
-                renderMenu(); // Re-render to show edit icons
-            } else {
-                showToast("Code PIN Incorrect", true);
+                document.getElementById('auth-modal').classList.add('hidden');
+                document.getElementById('btn-add-new').classList.remove('hidden');
+                document.getElementById('admin-lock-btn').innerHTML = '<i class="fas fa-unlock text-blue-600"></i>';
+                renderMenu();
+                showToast("Accès autorisé");
                 document.getElementById('admin-pin').value = '';
+            } else {
+                showToast("PIN Incorrect", true);
             }
         };
-
-        // --- Editor Logic ---
-
-        let editingId = null;
 
         window.openEditor = (id = null) => {
-            if (!isAdmin) {
-                toggleAdminPanel();
-                return;
-            }
-
-            editingId = id;
-            elEditorModal.classList.remove('hidden');
-            
-            const deleteBtn = document.getElementById('btn-delete');
-
-            if (id) {
-                // Edit mode
-                const sub = subjects.find(s => s.id === id);
-                elEditTitle.value = sub.title;
-                elEditContent.value = sub.content;
-                deleteBtn.classList.remove('hidden');
-            } else {
-                // Create mode
-                elEditTitle.value = "Nouveau Sujet";
-                insertTemplate(); // Pre-fill with template
-                deleteBtn.classList.add('hidden');
-            }
-            closeMenu();
-        };
-
-        window.insertTemplate = () => {
-            elEditContent.value = `
-<div class="mb-6">
-    <div class="flex justify-between items-center border-b border-black pb-1 mb-3">
-        <span class="font-bold text-lg">Exercice 1 : Titre</span>
-        <span class="font-bold">(5 pts)</span>
-    </div>
-    <ul class="list-disc pl-5 space-y-2">
-        <li>Calculer l'expression : $A = \\sqrt{25} + 3^2$</li>
-        <li>Résoudre l'équation : $$x^2 - 4x + 3 = 0$$</li>
-    </ul>
-</div>
-
-<div class="mb-6">
-    <div class="flex justify-between items-center border-b border-black pb-1 mb-3">
-        <span class="font-bold text-lg">Exercice 2 : Géométrie</span>
-        <span class="font-bold">(5 pts)</span>
-    </div>
-    <p>Soit $ABC$ un triangle rectangle en $A$.</p>
-</div>`;
+            currentSubjectId = id;
+            const sub = id ? subjects.find(s => s.id === id) : { title: '', content: '' };
+            document.getElementById('edit-title').value = sub.title;
+            elEditContent.value = sub.content;
+            document.getElementById('btn-delete').classList.toggle('hidden', !id);
+            document.getElementById('editor-modal').classList.remove('hidden');
+            updatePreview();
         };
 
         window.closeModals = () => {
-            elAuthModal.classList.add('hidden');
-            elEditorModal.classList.add('hidden');
-            editingId = null;
+            document.getElementById('auth-modal').classList.add('hidden');
+            document.getElementById('editor-modal').classList.add('hidden');
+        };
+
+        function updatePreview() {
+            elLivePreview.innerHTML = elEditContent.value;
+            if (window.MathJax) window.MathJax.typesetPromise([elLivePreview]);
+        }
+        elEditContent.addEventListener('input', updatePreview);
+
+        window.insertTemplate = () => {
+            elEditContent.value = `<div class="mb-6">
+  <h3 class="font-bold border-b-2 border-black mb-2 flex justify-between">
+    <span>Exercice 1</span> <span>(5 pts)</span>
+  </h3>
+  <p>Soit l'expression $E = (x+3)^2 - 4$.</p>
+  <ul class="list-disc ml-8 mt-2">
+    <li>Développer et réduire $E$.</li>
+    <li>Calculer $E$ pour $x = \\sqrt{2}$.</li>
+    <li>Factoriser $E$.</li>
+  </ul>
+</div>`;
+            updatePreview();
         };
 
         window.saveSubject = async () => {
-            const title = elEditTitle.value;
-            const content = elEditContent.value;
-
-            if (!title || !content) {
-                showToast("Veuillez remplir tous les champs", true);
-                return;
-            }
-
-            showToast("Sauvegarde en cours...");
+            if (!user) return;
+            const data = {
+                title: document.getElementById('edit-title').value || "Sujet sans titre",
+                content: elEditContent.value,
+                updatedAt: serverTimestamp()
+            };
 
             try {
-                if (editingId) {
-                    // Update
-                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME, editingId);
-                    await updateDoc(docRef, {
-                        title: title,
-                        content: content
-                    });
+                if (currentSubjectId && subjects.find(s => s.id === currentSubjectId)) {
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'exams', currentSubjectId), data);
                 } else {
-                    // Create
-                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME), {
-                        title: title,
-                        content: content,
-                        createdAt: serverTimestamp()
-                    });
+                    data.createdAt = serverTimestamp();
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'exams'), data);
                 }
-                
-                showToast("Sujet sauvegardé !");
+                showToast("Enregistré avec succès !");
                 closeModals();
-            } catch (error) {
-                console.error(error);
-                showToast("Erreur lors de la sauvegarde", true);
-            }
+            } catch (e) { showToast("Erreur d'écriture", true); }
         };
 
         window.deleteCurrentSubject = async () => {
-            if (!editingId) return;
-            if(!confirm("Êtes-vous sûr de vouloir supprimer ce sujet définitivement ?")) return;
-
+            if (!currentSubjectId || !confirm("Supprimer ce sujet définitivement ?")) return;
             try {
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME, editingId));
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'exams', currentSubjectId));
                 showToast("Sujet supprimé");
+                currentSubjectId = null;
                 closeModals();
-                // Reset view
-                if(subjects.length > 0) loadExam(subjects[0].id);
-            } catch (error) {
-                console.error(error);
-                showToast("Erreur lors de la suppression", true);
-            }
+            } catch (e) { showToast("Erreur de suppression", true); }
+        };
+
+        function showToast(m, err = false) {
+            const t = document.getElementById('toast');
+            t.innerText = m;
+            t.classList.toggle('bg-red-600', err);
+            t.classList.toggle('bg-blue-600', !err);
+            t.style.opacity = '1';
+            setTimeout(() => t.style.opacity = '0', 3000);
         }
 
-        // --- Utilities ---
-
-        function showToast(msg, isError = false) {
-            const toast = document.getElementById('toast');
-            const toastMsg = document.getElementById('toast-msg');
-            toastMsg.innerText = msg;
-            
-            if (isError) {
-                toast.classList.remove('bg-gray-800');
-                toast.classList.add('bg-red-600');
-            } else {
-                toast.classList.add('bg-gray-800');
-                toast.classList.remove('bg-red-600');
-            }
-
-            toast.classList.remove('opacity-0', 'translate-y-[-20px]');
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-y-[-20px]');
-            }, 3000);
-        }
-
-        // Start
         init();
-
     </script>
 </body>
 </html>
