@@ -1,1 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin | Yahya Service</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav>
+        <div class="container">
+            <a href="index.html" class="logo">YAHYA ADMIN</a>
+            <button id="logout-btn" class="btn btn-outline" style="display: none;">Déconnexion</button>
+        </div>
+    </nav>
+
+    <main class="container" style="padding: 2rem 0;">
+        <div id="auth-section" style="max-width: 400px; margin: 4rem auto; background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+            <h2 style="margin-bottom: 1.5rem;">Connexion Admin</h2>
+            <form id="login-form">
+                <input type="email" id="admin-email" placeholder="Email" style="width:100%; padding: 0.8rem; margin-bottom: 1rem; border: 1px solid #ddd; border-radius: 6px;" required>
+                <input type="password" id="admin-password" placeholder="Mot de passe" style="width:100%; padding: 0.8rem; margin-bottom: 1.5rem; border: 1px solid #ddd; border-radius: 6px;" required>
+                <button type="submit" class="btn btn-primary" style="width:100%;">Se connecter</button>
+            </form>
+        </div>
+
+        <div id="dashboard-section" style="display: none;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                <div style="background: white; padding: 2rem; border-radius: 12px; border: 1px solid #e2e8f0;">
+                    <h2 id="form-title" style="margin-bottom: 1.5rem;">Nouvel Article</h2>
+                    <form id="article-form">
+                        <input type="hidden" id="edit-id">
+                        <input type="text" id="art-title" placeholder="Titre" style="width:100%; padding: 0.8rem; margin-bottom: 1rem; border: 1px solid #ddd; border-radius: 6px;" required>
+                        <input type="text" id="art-image" placeholder="Lien image" style="width:100%; padding: 0.8rem; margin-bottom: 1rem; border: 1px solid #ddd; border-radius: 6px;" required>
+                        <input type="text" id="art-tags" placeholder="Tags (ex: Sport, Tech)" style="width:100%; padding: 0.8rem; margin-bottom: 1rem; border: 1px solid #ddd; border-radius: 6px;" required>
+                        <textarea id="art-content" placeholder="Contenu de l'article" style="width:100%; padding: 0.8rem; height: 200px; margin-bottom: 1rem; border: 1px solid #ddd; border-radius: 6px;" required></textarea>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">Enregistrer</button>
+                    </form>
+                </div>
+                <div>
+                    <h2>Gérer les articles</h2>
+                    <div id="admin-article-list"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="js/admin.js"></script>
+</body>
+</html>
+
 
